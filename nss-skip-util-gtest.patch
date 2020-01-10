@@ -1,11 +1,21 @@
-diff -up nss/gtests/manifest.mn.skip_util_gtest nss/gtests/manifest.mn
---- nss/gtests/manifest.mn.skip_util_gtest	2017-11-08 17:22:45.833700300 +0100
-+++ nss/gtests/manifest.mn	2017-11-08 17:24:01.320991577 +0100
-@@ -33,6 +33,5 @@ endif
+diff -up nss/gtests/manifest.mn.skip-util-gtests nss/gtests/manifest.mn
+--- nss/gtests/manifest.mn.skip-util-gtests	2019-03-16 01:25:08.000000000 +0100
++++ nss/gtests/manifest.mn	2019-03-21 12:41:02.264072681 +0100
+@@ -35,6 +35,5 @@ endif
  
  DIRS = \
  	$(LIB_SRCDIRS) \
 -	$(UTIL_SRCDIRS) \
  	$(NSS_SRCDIRS) \
  	$(NULL)
-diff -up nss/gtests/ssl_gtest/manifest.mn.skip_util_gtest nss/gtests/ssl_gtest/manifest.mn
+diff -up nss/gtests/ssl_gtest/manifest.mn.skip-util-gtests nss/gtests/ssl_gtest/manifest.mn
+--- nss/gtests/ssl_gtest/manifest.mn.skip-util-gtests	2019-03-16 01:25:08.000000000 +0100
++++ nss/gtests/ssl_gtest/manifest.mn	2019-03-21 12:41:02.265072660 +0100
+@@ -67,6 +67,7 @@ PROGRAM = ssl_gtest
+ EXTRA_LIBS += \
+       $(DIST)/lib/$(LIB_PREFIX)gtest.$(LIB_SUFFIX) \
+       $(DIST)/lib/$(LIB_PREFIX)cpputil.$(LIB_SUFFIX) \
++      -lsoftokn3
+       $(NULL)
+ 
+ USE_STATIC_LIBS = 1

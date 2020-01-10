@@ -1,0 +1,178 @@
+diff -up ./nss/doc/certutil.xml.ipsec-usage ./nss/doc/certutil.xml
+--- ./nss/doc/certutil.xml.ipsec-usage	2019-05-10 14:14:18.000000000 -0700
++++ ./nss/doc/certutil.xml	2019-10-04 14:51:36.068506761 -0700
+@@ -428,6 +428,9 @@ of the attribute codes:
+ 	<listitem>
+ <para><command>J</command> (as an object signer)</para>
+ 	</listitem>
++	<listitem>
++<para><command>I</command> (as an IPSEC user)</para>
++	</listitem>
+ 	</itemizedlist></listitem>
+       </varlistentry>
+ 
+diff -up ./nss/doc/nroff/certutil.1.ipsec-usage ./nss/doc/nroff/certutil.1
+--- ./nss/doc/nroff/certutil.1.ipsec-usage	2019-10-07 15:22:31.410862302 -0700
++++ ./nss/doc/nroff/certutil.1	2019-10-07 15:23:16.282007814 -0700
+@@ -1,13 +1,13 @@
+ '\" t
+ .\"     Title: CERTUTIL
+ .\"    Author: [see the "Authors" section]
+-.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+-.\"      Date:  5 October 2017
++.\" Generator: DocBook XSL Stylesheets v1.78.1 <http://docbook.sf.net/>
++.\"      Date:  7 October 2019
+ .\"    Manual: NSS Security Tools
+ .\"    Source: nss-tools
+ .\"  Language: English
+ .\"
+-.TH "CERTUTIL" "1" "5 October 2017" "nss-tools" "NSS Security Tools"
++.TH "CERTUTIL" "1" "7 October 2019" "nss-tools" "NSS Security Tools"
+ .\" -----------------------------------------------------------------
+ .\" * Define some portability stuff
+ .\" -----------------------------------------------------------------
+@@ -187,6 +187,11 @@ Arguments modify a command option and ar
+ Use ASCII format or allow the use of ASCII format for input or output\&. This formatting follows RFC 1113\&. For certificate requests, ASCII output defaults to standard output unless redirected\&.
+ .RE
+ .PP
++\-\-simple\-self\-signed
++.RS 4
++When printing the certificate chain, don\*(Aqt search for a chain if issuer name equals to subject name\&.
++.RE
++.PP
+ \-b validity\-time
+ .RS 4
+ Specify a time at which a certificate is required to be valid\&. Use when checking certificate validity with the
+@@ -574,6 +579,18 @@ The contexts are the following:
+ \fBJ\fR
+ (as an object signer)
+ .RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++\fBI\fR
++(as an IPSEC user)
++.RE
+ .RE
+ .PP
+ \-v valid\-months
+@@ -1046,6 +1063,83 @@ msTrustListSign
+ critical
+ .RE
+ .sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++x509Any
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecIKE
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecIKEEnd
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecIKEIntermediate
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecEnd
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecTunnel
++.RE
++.sp
++.RS 4
++.ie n \{\
++\h'-04'\(bu\h'+03'\c
++.\}
++.el \{\
++.sp -1
++.IP \(bu 2.3
++.\}
++ipsecUser
++.RE
++.sp
+ X\&.509 certificate extensions are described in RFC 5280\&.
+ .RE
+ .PP
+@@ -1530,8 +1624,7 @@ There are ways to narrow the keys listed
+ .IP \(bu 2.3
+ .\}
+ To return a specific key, use the
+-\fB\-n\fR
+-\fIname\fR
++\fB\-n\fR\fIname\fR
+ argument with the name of the key\&.
+ .RE
+ .sp
+@@ -1544,8 +1637,7 @@ argument with the name of the key\&.
+ .IP \(bu 2.3
+ .\}
+ If there are multiple security devices loaded, then the
+-\fB\-h\fR
+-\fItokenname\fR
++\fB\-h\fR\fItokenname\fR
+ argument can search a specific token or all tokens\&.
+ .RE
+ .sp
+@@ -1558,8 +1650,7 @@ argument can search a specific token or
+ .IP \(bu 2.3
+ .\}
+ If there are multiple key types available, then the
+-\fB\-k\fR
+-\fIkey\-type\fR
++\fB\-k\fR\fIkey\-type\fR
+ argument can search a specific type of key, like RSA, DSA, or ECC\&.
+ .RE
+ .PP

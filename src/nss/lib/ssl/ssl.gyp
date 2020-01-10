@@ -35,6 +35,7 @@
         'sslinit.c',
         'sslmutex.c',
         'sslnonce.c',
+        'sslprimitive.c',
         'sslreveal.c',
         'sslsecur.c',
         'sslsnce.c',
@@ -43,6 +44,7 @@
         'ssltrace.c',
         'sslver.c',
         'tls13con.c',
+        'tls13esni.c',
         'tls13exthandle.c',
         'tls13hashstate.c',
         'tls13hkdf.c',
@@ -65,6 +67,11 @@
         [ 'fuzz_tls==1', {
           'defines': [
             'UNSAFE_FUZZER_MODE',
+          ],
+        }],
+        [ 'OS=="dragonfly" or OS=="freebsd" or OS=="netbsd" or OS=="openbsd" or OS=="linux"', {
+          'cflags': [
+            '-std=gnu99',
           ],
         }],
       ],

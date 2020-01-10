@@ -1,16 +1,16 @@
-diff -up nss/lib/ssl/sslsock.c.cbcrandomivoff nss/lib/ssl/sslsock.c
---- nss/lib/ssl/sslsock.c.cbcrandomivoff	2018-02-28 11:53:12.468281549 +0100
-+++ nss/lib/ssl/sslsock.c	2018-02-28 11:54:22.068723052 +0100
-@@ -70,7 +70,7 @@ static sslOptions ssl_defaults = {
+diff -up ./nss/lib/ssl/sslsock.c.cbcrandomivoff ./nss/lib/ssl/sslsock.c
+--- ./nss/lib/ssl/sslsock.c.cbcrandomivoff	2019-08-27 16:37:03.446168087 -0700
++++ ./nss/lib/ssl/sslsock.c	2019-08-27 16:40:31.760827515 -0700
+@@ -73,7 +73,7 @@ static sslOptions ssl_defaults = {
      .enableRenegotiation = SSL_RENEGOTIATE_TRANSITIONAL,
      .requireSafeNegotiation = PR_FALSE,
      .enableFalseStart = PR_FALSE,
 -    .cbcRandomIV = PR_TRUE,
 +    .cbcRandomIV = PR_FALSE,
      .enableOCSPStapling = PR_FALSE,
-     .enableNPN = PR_FALSE,
      .enableALPN = PR_TRUE,
-@@ -3638,9 +3638,9 @@ ssl_SetDefaultsFromEnvironment(void)
+     .reuseServerECDHEKey = PR_TRUE,
+@@ -3729,9 +3729,9 @@ ssl_SetDefaultsFromEnvironment(void)
                         PR_TRUE));
          }
          ev = PR_GetEnvSecure("NSS_SSL_CBC_RANDOM_IV");

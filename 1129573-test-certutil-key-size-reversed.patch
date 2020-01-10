@@ -1,0 +1,12 @@
+diff -up ./nss/tests/cert/cert.sh.test_keep_1024_default ./nss/tests/cert/cert.sh
+--- ./nss/tests/cert/cert.sh.test_keep_1024_default	2019-09-17 13:36:37.471576443 -0700
++++ ./nss/tests/cert/cert.sh	2019-09-17 13:39:06.935015951 -0700
+@@ -2255,7 +2255,7 @@ Signature Algorithm: PKCS #1 RSA-PSS Sig
+         Hash algorithm: SHA-512
+         Mask algorithm: PKCS #1 MGF1 Mask Generation Function
+         Mask hash algorithm: SHA-512
+-        Salt length: 64 (0x40)
++        Salt length: 62 (0x3e)
+ EOF
+   check_sign_algo
+ 

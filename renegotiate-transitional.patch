@@ -1,6 +1,6 @@
 diff -up nss/lib/ssl/sslsock.c.transitional nss/lib/ssl/sslsock.c
---- nss/lib/ssl/sslsock.c.transitional	2018-02-28 11:51:19.196817761 +0100
-+++ nss/lib/ssl/sslsock.c	2018-02-28 11:52:22.035410850 +0100
+--- nss/lib/ssl/sslsock.c.transitional	2018-03-09 17:21:52.593560971 +0100
++++ nss/lib/ssl/sslsock.c	2018-03-09 17:22:21.096926523 +0100
 @@ -67,7 +67,7 @@ static sslOptions ssl_defaults = {
      .noLocks = PR_FALSE,
      .enableSessionTickets = PR_FALSE,

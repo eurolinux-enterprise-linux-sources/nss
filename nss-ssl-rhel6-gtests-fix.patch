@@ -1,0 +1,84 @@
+diff -up ./nss/gtests/ssl_gtest/ssl_auth_unittest.cc.ssl-rhel6-gtests-fix ./nss/gtests/ssl_gtest/ssl_auth_unittest.cc
+--- ./nss/gtests/ssl_gtest/ssl_auth_unittest.cc.ssl-rhel6-gtests-fix	2019-10-14 16:07:41.177855067 -0700
++++ ./nss/gtests/ssl_gtest/ssl_auth_unittest.cc	2019-10-14 16:07:41.240855273 -0700
+@@ -847,8 +847,9 @@ static SSLNamedGroup NamedGroupForEcdsa3
+   // 1.0, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA is the highest priority suite, so
+   // we use P-384. With TLS 1.2 on we pick AES-128 GCM so use x25519.
+   // FIXME: In RHEL, we assign TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
+-  // a higher priority than AES-128 GCM.
+-  if (version <= SSL_LIBRARY_VERSION_TLS_1_2) {
++  // a higher priority than AES-128 GCM. Except in RHEL-6, where we follow
++  // upstream.
++  if (version < SSL_LIBRARY_VERSION_TLS_1_2) {
+     return ssl_grp_ec_secp384r1;
+   }
+   return ssl_grp_ec_curve25519;
+diff -up ./nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.ssl-rhel6-gtests-fix ./nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
+--- ./nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.ssl-rhel6-gtests-fix	2019-10-14 16:07:41.161855014 -0700
++++ ./nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2019-10-14 17:43:50.461396642 -0700
+@@ -364,7 +364,7 @@ INSTANTIATE_CIPHER_TEST_P(
+     TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
+     TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
+ INSTANTIATE_CIPHER_TEST_P(
+-    CBCStream, Stream, V10ToV12, kDummyNamedGroupParams,
++    CBCStream, Stream, V11V12, kDummyNamedGroupParams,
+     kDummySignatureSchemesParams, TLS_ECDH_ECDSA_WITH_NULL_SHA,
+     TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
+     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_ECDSA_WITH_NULL_SHA,
+diff -up ./nss/gtests/ssl_gtest/ssl_loopback_unittest.cc.ssl-rhel6-gtests-fix ./nss/gtests/ssl_gtest/ssl_loopback_unittest.cc
+--- ./nss/gtests/ssl_gtest/ssl_loopback_unittest.cc.ssl-rhel6-gtests-fix	2019-05-10 14:14:18.000000000 -0700
++++ ./nss/gtests/ssl_gtest/ssl_loopback_unittest.cc	2019-10-14 16:07:41.242855280 -0700
+@@ -588,6 +588,8 @@ TEST_F(TlsConnectTest, ConnectSSLv3Clien
+   CheckKeys(ssl_kea_rsa, ssl_grp_none, ssl_auth_rsa_decrypt, ssl_sig_none);
+ }
+ 
++#ifdef notRHEL6
++/* we don't do oneNRecordSplitting in RHEL 6 (on purpose) */
+ static size_t ExpectedCbcLen(size_t in, size_t hmac = 20, size_t block = 16) {
+   // MAC-then-Encrypt expansion formula:
+   return ((in + hmac + (block - 1)) / block) * block;
+@@ -607,6 +609,7 @@ TEST_F(TlsConnectTest, OneNRecordSplitti
+   EXPECT_EQ(ExpectedCbcLen(16384), records->record(1).buffer.len());
+   EXPECT_EQ(ExpectedCbcLen(20), records->record(2).buffer.len());
+ }
++#endif
+ 
+ // We can't test for randomness easily here, but we can test that we don't
+ // produce a zero value, or produce the same value twice.  There are 5 values
+diff -up ./nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc.ssl-rhel6-gtests-fix ./nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc
+--- ./nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc.ssl-rhel6-gtests-fix	2019-10-14 16:37:52.445772276 -0700
++++ ./nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc	2019-10-14 17:04:17.172896070 -0700
+@@ -139,12 +139,15 @@ TEST_P(TlsConnectGeneric, ServerAuthBigg
+     // in TLS 1.2 or TLS 1.1, AES-256 is selected by default, which
+     // needs a different kea setup
+     SSLSignatureScheme scheme;
++    SSLNamedGroup group;
+     if (version_ >= SSL_LIBRARY_VERSION_TLS_1_2) {
+         scheme = ssl_sig_rsa_pss_rsae_sha256;
++        group = ssl_grp_ec_curve25519;
+     } else {
+         scheme = ssl_sig_rsa_pkcs1_sha256;
++        group = ssl_grp_ec_secp521r1;
+     }
+-    CheckKeys(ssl_kea_ecdh, ssl_grp_ec_secp521r1, ssl_auth_rsa_sign, scheme);
++    CheckKeys(ssl_kea_ecdh, group, ssl_auth_rsa_sign, scheme);
+   }
+ }
+ 
+diff -up ./nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc.ssl-rhel6-gtests-fix ./nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc
+--- ./nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc.ssl-rhel6-gtests-fix	2019-05-10 14:14:18.000000000 -0700
++++ ./nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc	2019-10-14 16:07:41.242855280 -0700
+@@ -183,9 +183,10 @@ class TestPolicyVersionRange
+   void RemoveConflictingVersions(SSLProtocolVariant variant,
+                                  SSLVersionRange* r) {
+     ASSERT_TRUE(r != nullptr);
+-    if (r->max >= SSL_LIBRARY_VERSION_TLS_1_3 &&
+-        r->min < SSL_LIBRARY_VERSION_TLS_1_0) {
+-      r->min = SSL_LIBRARY_VERSION_TLS_1_0;
++    /* RHEL 6 manages conflicts low rather than high (prefer ssl3 over tls1.3) */
++    if ((r->min <= SSL_LIBRARY_VERSION_3_0) &&
++        (r->max >= SSL_LIBRARY_VERSION_TLS_1_3)) {
++      r->max = SSL_LIBRARY_VERSION_TLS_1_2;
+     }
+   }
+ 

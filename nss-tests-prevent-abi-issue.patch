@@ -1,7 +1,7 @@
-diff -up nss/cmd/selfserv/selfserv.c.abi_tests nss/cmd/selfserv/selfserv.c
---- nss/cmd/selfserv/selfserv.c.abi_tests	2016-08-16 12:36:23.695996680 +0200
-+++ nss/cmd/selfserv/selfserv.c	2016-08-16 12:39:00.006879649 +0200
-@@ -425,7 +425,7 @@ printSecurityInfo(PRFileDesc *fd)
+diff -up ./cmd/selfserv/selfserv.c.abi_tests ./cmd/selfserv/selfserv.c
+--- ./cmd/selfserv/selfserv.c.abi_tests	2019-08-29 14:49:39.183133115 -0700
++++ ./cmd/selfserv/selfserv.c	2019-08-29 14:49:39.216133067 -0700
+@@ -393,7 +393,7 @@ printSecurityInfo(PRFileDesc *fd)
                      channel.authKeyBits, suite.authAlgorithmName,
                      channel.keaKeyBits, suite.keaTypeName,
                      channel.compressionMethodName,
@@ -10,22 +10,22 @@ diff -up nss/cmd/selfserv/selfserv.c.abi_tests nss/cmd/selfserv/selfserv.c
          }
      }
      if (verbose) {
-diff -up nss/cmd/tstclnt/tstclnt.c.abi_tests nss/cmd/tstclnt/tstclnt.c
---- nss/cmd/tstclnt/tstclnt.c.abi_tests	2016-08-16 12:36:23.696996653 +0200
-+++ nss/cmd/tstclnt/tstclnt.c	2016-08-16 12:39:24.460235581 +0200
-@@ -129,7 +129,7 @@ printSecurityInfo(PRFileDesc *fd)
+diff -up ./cmd/tstclnt/tstclnt.c.abi_tests ./cmd/tstclnt/tstclnt.c
+--- ./cmd/tstclnt/tstclnt.c.abi_tests	2019-08-29 14:49:39.216133067 -0700
++++ ./cmd/tstclnt/tstclnt.c	2019-08-29 14:51:18.683986752 -0700
+@@ -177,7 +177,7 @@ printSecurityInfo(PRFileDesc *fd)
                      channel.authKeyBits, suite.authAlgorithmName,
                      channel.keaKeyBits, suite.keaTypeName,
                      channel.compressionMethodName,
--                    channel.extendedMasterSecretUsed ? "Yes" : "No");
-+		    channel.reservedNotSupported ? "Yes": "No");
+-                    channel.extendedMasterSecretUsed ? "Yes" : "No",
++                    channel.reservedNotSupported ? "Yes" : "No",
+                     signatureSchemeName(channel.signatureScheme));
          }
      }
-     cert = SSL_RevealCert(fd);
-diff -up nss/gtests/ssl_gtest/tls_agent.cc.abi_tests nss/gtests/ssl_gtest/tls_agent.cc
---- nss/gtests/ssl_gtest/tls_agent.cc.abi_tests	2016-08-16 12:36:23.696996653 +0200
-+++ nss/gtests/ssl_gtest/tls_agent.cc	2016-08-16 12:39:45.167690174 +0200
-@@ -571,7 +571,7 @@ void TlsAgent::CheckExtendedMasterSecret
+diff -up ./gtests/ssl_gtest/tls_agent.cc.abi_tests ./gtests/ssl_gtest/tls_agent.cc
+--- ./gtests/ssl_gtest/tls_agent.cc.abi_tests	2019-05-10 14:14:18.000000000 -0700
++++ ./gtests/ssl_gtest/tls_agent.cc	2019-08-29 14:49:39.216133067 -0700
+@@ -858,7 +858,7 @@ void TlsAgent::CheckExtendedMasterSecret
    if (version() >= SSL_LIBRARY_VERSION_TLS_1_3) {
      expected = PR_TRUE;
    }

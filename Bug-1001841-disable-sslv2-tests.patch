@@ -1,11 +1,10 @@
-diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
---- nss/tests/ssl/ssl.sh.disableSSL2tests	2018-02-27 15:47:47.000000000 +0100
-+++ nss/tests/ssl/ssl.sh	2018-02-28 11:56:37.150698258 +0100
-@@ -68,9 +68,14 @@ ssl_init()
-   NSS_SSL_RUN=${NSS_SSL_RUN:-$nss_ssl_run}
-   
+diff -up ./tests/ssl/ssl.sh.disableSSL2tests ./tests/ssl/ssl.sh
+--- ./tests/ssl/ssl.sh.disableSSL2tests	2019-05-10 14:14:18.000000000 -0700
++++ ./tests/ssl/ssl.sh	2019-08-27 16:54:19.969506262 -0700
+@@ -69,8 +69,14 @@ ssl_init()
+ 
    # Test case files
--  SSLCOV=${QADIR}/ssl/sslcov.txt
+   SSLCOV=${QADIR}/ssl/sslcov.txt
 +  if [ "${NSS_NO_SSL2}" = "1" ]; then
 +    SSLCOV=${QADIR}/ssl/sslcov.noSSL2orExport.txt
 +    SSLSTRESS=${QADIR}/ssl/sslstress.noSSL2orExport.txt
@@ -18,7 +17,7 @@ diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
    SSLPOLICY=${QADIR}/ssl/sslpolicy.txt
    REQUEST_FILE=${QADIR}/ssl/sslreq.dat
  
-@@ -128,7 +133,11 @@ is_selfserv_alive()
+@@ -128,7 +134,11 @@ is_selfserv_alive()
    fi
  
    echo "kill -0 ${PID} >/dev/null 2>/dev/null"
@@ -30,11 +29,12 @@ diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
  
    echo "selfserv with PID ${PID} found at `date`"
  }
-@@ -152,7 +161,11 @@ wait_for_selfserv()
+@@ -152,7 +162,12 @@ wait_for_selfserv()
        ${BINDIR}/tstclnt -4 -p ${PORT} -h ${HOSTADDR} ${CLIENT_OPTIONS} -q \
                -d ${P_R_CLIENTDIR} $verbose < ${REQUEST_FILE}
        if [ $? -ne 0 ]; then
-+          if [ "${NSS_NO_SSL2}" = "1" ] && [[ ${EXP} -eq 0 || ${SSL2} -eq 0 ]]; then
++          if [ "${NSS_NO_SSL2}" = "1" ] && [[ ${EXP} -eq 0 || ${SSL2} -eq 0 ]];
++ then
 +              html_passed "Server never started"
 +          else
            html_failed "Waiting for Server"
@@ -42,8 +42,8 @@ diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
        fi
    fi
    is_selfserv_alive
-@@ -275,7 +288,7 @@ ssl_cov()
-   start_selfserv # Launch the server
+@@ -280,7 +295,7 @@ ssl_cov()
+   start_selfserv $CIPHER_SUITES # Launch the server
  
    VMIN="ssl3"
 -  VMAX="tls1.1"
@@ -51,7 +51,7 @@ diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
  
    ignore_blank_lines ${SSLCOV} | \
    while read ectype testmax param testname
-@@ -283,6 +296,12 @@ ssl_cov()
+@@ -288,6 +303,12 @@ ssl_cov()
        echo "${testname}" | grep "EXPORT" > /dev/null
        EXP=$?
  
@@ -61,6 +61,6 @@ diff -up nss/tests/ssl/ssl.sh.disableSSL2tests nss/tests/ssl/ssl.sh
 +         continue
 +      fi
 +
-       if [ "$ectype" = "ECC" ] ; then
-           echo "$SCRIPTNAME: skipping  $testname (ECC only)"
-       else
+       # RSA-PSS tests are handled in a separate function
+       case $testname in
+         *RSA-PSS)

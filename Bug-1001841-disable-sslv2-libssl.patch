@@ -1,19 +1,21 @@
-diff -up lib/ssl/config.mk.disableSSL2libssl lib/ssl/config.mk
---- lib/ssl/config.mk.disableSSL2libssl	2017-02-17 14:20:06.000000000 +0100
-+++ lib/ssl/config.mk	2017-02-28 11:35:59.263034578 +0100
-@@ -69,3 +69,8 @@ endif
- ifdef NSS_DISABLE_TLS_1_3
+diff -up ./lib/ssl/config.mk.disableSSL2libssl ./lib/ssl/config.mk
+--- ./lib/ssl/config.mk.disableSSL2libssl	2019-08-27 16:43:22.397554295 -0700
++++ ./lib/ssl/config.mk	2019-08-27 16:46:36.209248329 -0700
+@@ -61,6 +61,10 @@ ifdef NSS_DISABLE_TLS_1_3
  DEFINES += -DNSS_DISABLE_TLS_1_3
  endif
-+
+ 
 +ifdef NSS_NO_SSL2
 +DEFINES += -DNSS_NO_SSL2
 +endif
 +
-diff -up lib/ssl/sslsock.c.disableSSL2libssl lib/ssl/sslsock.c
---- lib/ssl/sslsock.c.disableSSL2libssl	2017-02-28 11:35:59.254034805 +0100
-+++ lib/ssl/sslsock.c	2017-02-28 11:36:56.525590516 +0100
-@@ -1221,6 +1221,10 @@ SSL_OptionSetDefault(PRInt32 which, PRBo
+ ifeq (,$(filter-out DragonFly FreeBSD Linux NetBSD OpenBSD, $(OS_TARGET)))
+ CFLAGS += -std=gnu99
+ endif
+diff -up ./lib/ssl/sslsock.c.disableSSL2libssl ./lib/ssl/sslsock.c
+--- ./lib/ssl/sslsock.c.disableSSL2libssl	2019-08-27 16:43:22.386554312 -0700
++++ ./lib/ssl/sslsock.c	2019-08-27 16:43:22.397554295 -0700
+@@ -1363,6 +1363,10 @@ SSLExp_SetMaxEarlyDataSize(PRFileDesc *f
  static PRBool
  ssl_IsRemovedCipherSuite(PRInt32 suite)
  {

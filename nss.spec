@@ -1,10 +1,11 @@
-%global nspr_version 4.19.0
-%global nss_util_version 3.36.0
-%global nss_softokn_fips_version 3.14.3
-%global nss_softokn_version 3.14.3
-%global required_softokn_build_version -22
+%global nspr_version 4.21.0
+%global nss_util_version 3.44.0
+%global nss_softokn_fips_version 3.44.0
+%global nss_softokn_version 3.44.0
+%global required_softokn_build_version -1
+%global nss_version 3.44
 %global unsupported_tools_directory %{_libdir}/nss/unsupported-tools
-%global allTools "certutil cmsutil crlutil derdump modutil pk12util pp signtool signver ssltap vfychain vfyserv"
+%global allTools "certutil cmsutil crlutil derdump modutil nss-policy-check pk12util pp signtool signver ssltap vfychain vfyserv"
 
 # solution taken from icedtea-web.spec
 %define multilib_arches x86_64 ppc64 ia64 s390x sparc64
@@ -23,8 +24,8 @@
 
 Summary:          Network Security Services
 Name:             nss
-Version:          3.36.0
-Release:          9%{?dist}
+Version:          %{nss_version}.0
+Release:          7%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -46,7 +47,7 @@ BuildRequires:    psmisc
 BuildRequires:    perl
 Conflicts:        curl < 7.19.7-26.el6
 
-Source0:          %{name}-%{version}.tar.gz
+Source0:          %{name}-%{nss_version}.tar.gz
 
 Source1:          nss.pc.in
 Source2:          nss-config.in
@@ -65,10 +66,11 @@ Source19:         TestUser51.cert
 Source20:         PayPalRootCA.cert
 Source21:         PayPalICA.cert
 Source22:         nss-rhel6.config
+Source23:         TestOldCA.p12
 
 Patch2:           add-relro-linker-option.patch
-Patch3:           nss-noexecstack.patch
-Patch4:           renegotiate-transitional.patch
+Patch3:           renegotiate-transitional.patch
+Patch4:           nss-noexecstack.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=402712
 Patch6:           nss-enable-pem.patch
 # Below reference applies to most pem module related patches
@@ -103,12 +105,10 @@ Patch51: pem-compile-with-Werror.patch
 Patch52: Bug-1001841-disable-sslv2-libssl.patch
 Patch53: Bug-1001841-disable-sslv2-tests.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=943144
-Patch62: nss-fix-deadlock-squash.patch
+#Patch62: nss-fix-deadlock-squash.patch
+# Update certdata.txt to version 2.32
+Patch54: nss-rhel-6.10-ca-2.32.patch
 
-# Local patch to deal with current older version of softoken/freebl
-Patch69: define-uint32.patch
-Patch70: disable-pss.patch
-Patch71: nss-disable-sha384.patch
 # Local patch to be carried forward as we rebase nss
 # Reverse the changing of the cipher-orders done upstream
 Patch90: keep_old_cipher_suite_order.patch
@@ -116,62 +116,61 @@ Patch90: keep_old_cipher_suite_order.patch
 Patch92: p-1058933-b-reversed.patch
 # Revert upstream increase of default key size to 2048 bits for certutil
 Patch93: 1129573-certutil-key-size-reversed.patch
+Patch94: 1129573-test-certutil-key-size-reversed.patch
 # Patch to keep the TLS protocol versions that are enabled by default
 Patch98: nss-revert-tls-version-defaults.patch
 Patch102: enable-tls-12-by-default.patch
-Patch103: revert-upstream-ssl-ckm-tls12-from-nss321.patch
-Patch104: disable-extended-master-secret-with-old-softoken.patch
 Patch105: nss-prevent-abi-issue.patch
 Patch106: nss-tests-prevent-abi-issue.patch
 Patch110: nss-sni-c-v-fix.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1279520
-Patch200: nss-check-policy-file.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1280846
 Patch201: nss-skip-util-gtest.patch
-# Disable X25519 and ChaCha20, until nss-softokn is rebased
-Patch202: nss-disable-curve25519.patch
-# Patch to disable TLS_ECDHE_{RSA,ECDSA}_WITH_AES_128_CBC_SHA256
-# We encourage new applications to use the GCM variants.
-Patch209: nss-disable-ciphers.patch
-# Patches to disable SSL tests on ciphersuites not working in RHEL-6 for
-# compatibility reasons, namely:
-# - ciphersuites using SHA384 as PRF, not supported by old softoken
-# - CHACHA20_POLY1305 ciphersuites, not supported by old softoken
-# - extended master secret extension, not supported by old softoken
-# - TLS 1.0 with CBC-random-IV, disabled by %%patch29
-# - TLS PRF tests in pk11_gtest, not supported by old softoken
-# - PBKDF2 key derivation tests in pk11_gtest, it's crashing with
-#   unknown reason
-Patch210: nss-disable-curve25519-gtests.patch
-Patch211: nss-disable-curve25519-tests.patch
-Patch212: nss-disable-chacha20-gtests.patch
-Patch213: nss-disable-chacha20-tests.patch
-Patch214: nss-disable-pss-gtests.patch
-Patch215: nss-disable-pss-tests.patch
-Patch216: nss-disable-unsupported-gtests.patch
-Patch217: nss-disable-sha384-tests.patch
-Patch218: nss-disable-sha384-gtests.patch
-Patch219: nss-disable-rsa-fips-186-4-tests.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=1298692
-Patch220: nss-disable-ems-gtests.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1427481
-Patch221: nss-pem-catch-failed-ASN1-decoding-of-RSA-keys.patch
-# not upstreamed: preserve trust settings after password change in tests
-Patch222: nss-nologin-keep-trust.patch
+Patch219: nss-pem-catch-failed-ASN1-decoding-of-RSA-keys.patch
+#
+# new for 3.44
+#
+Patch130: nss-reorder-cipher-suites-gtests.patch
 # To revert the change in:
 # https://bugzilla.mozilla.org/show_bug.cgi?id=1377940
-Patch223: nss-sql-default.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1444960
-Patch224: nss-tests-ssl-normal-normal.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1445989
-Patch225: nss-tests-ssl-ecc-skip.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1278071
-Patch226: nss-pkcs12-iterations-limit.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1447628
-Patch227: nss-devslot-reinsert.patch
-Patch228: nss-code-signing-trust.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1483128
-Patch229: nss-ssl2-server-random.patch
+Patch136: nss-sql-default.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1453408
+Patch139: nss-modutil-skip-changepw-fips.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1542207
+Patch147: nss-dsa-policy.patch
+# To revert the change in:
+# https://bugzilla.mozilla.org/show_bug.cgi?id=818686
+Patch148: nss-sysinit-userdb.patch
+# Disable nss-sysinit test which is sorely to test the above change
+Patch149: nss-skip-sysinit-gtests.patch
+# Enable SSLv2 compatible ClientHello, disabled in the change:
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1483128
+Patch150: nss-ssl2-compatible-client-hello.patch
+# TLS 1.3 currently doesn't work under FIPS mode:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1710372
+Patch151: nss-skip-tls13-fips-tests.sh
+# For backward compatibility: make -V "ssl3:" continue working, while
+# the minimum version is clamped to tls1.0
+#Patch152: nss-version-range-set.patch
+# TLS 1.3 currently doesn't work under FIPS mode:
+# https://bugzilla.redhat.com/show_bug.cgi?id=1710372
+Patch153: nss-fips-disable-tls13.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1552208
+Patch154: nss-disable-pkcs1-sigalgs-tls13.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1553443
+Patch155: nss-post-handshake-auth-with-tickets.patch
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1473806
+Patch156: nss-fix-public-key-from-priv.patch
+Patch157: nss-add-ipsec-usage-to-manpage.patch
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1571677
+Patch158: nss-fix-pkix-name-constraints-common-name.patch
+# Cleanups for the RHEL 6 release: 1) more cipher order changes.
+Patch159: nss-3.44-ssl-cleanup-rhel6.patch
+
+# keep rhel6 trust on 1024 certificates
+Patch160: nss-rhel6-keep-1024-certs.patch
+
+Patch170: nss-ssl-rhel6-gtests-fix.patch
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -238,18 +237,21 @@ low level services.
 
 
 %prep
-%setup -q
+%setup -q -n %{name}-%{nss_version}
 %{__cp} %{SOURCE10} -f ./nss/tests/libpkix/certs
 %{__cp} %{SOURCE17} -f ./nss/tests/libpkix/certs
 %{__cp} %{SOURCE18} -f ./nss/tests/libpkix/certs
 %{__cp} %{SOURCE19} -f ./nss/tests/libpkix/certs
 %{__cp} %{SOURCE20} -f ./nss/tests/libpkix/certs
 %{__cp} %{SOURCE21} -f ./nss/tests/libpkix/certs
-%setup -q -T -D -n %{name}-%{version} -a 12
+%{__cp} %{SOURCE23} -f ./nss/tests/tools
+%setup -q -T -D -n %{name}-%{nss_version} -a 12
 
 %patch2 -p0 -b .relro
-%patch3 -p0 -b .noexecstack
-%patch4 -p0 -b .transitional
+%patch3 -p0 -b .transitional
+# The compiler on ppc/ppc64 builders for RHEL-6 doesn't accept -z as a
+# linker option.  Use -Wl,-z instead.
+%patch4 -p0 -b .noexecstack
 %patch6 -p0 -b .libpem
 %patch16 -p0 -b .539183
 # link pem against buildroot's freebl, essential when mixing and matching
@@ -263,58 +265,48 @@ low level services.
 %patch51 -p0 -b .compile_Werror
 pushd nss
 %patch52 -p0 -b .disableSSL2libssl
-%patch53 -p1 -b .disableSSL2tests
-popd
-%patch69 -p0 -b .uint32
-pushd nss
-%patch62 -p1 -b .fix_deadlock
-%patch70 -p1 -b .disable_pss
-%patch71 -p1 -b .disable_sha384
+%patch53 -p0 -b .disableSSL2tests
 popd
 # moved patch90 to last position
 %patch92 -p0 -b .keep_sha1_default
 %patch93 -p0 -b .keep_1024_default
-pushd nss/lib/ckfw/builtins
-popd
+%patch94 -p0 -b .test_keep_1024_default
 # attention, reverting patch98
 %patch98 -p0 -b .keep_tls_default
 %patch102 -p1 -b .1272504
 %patch90 -p0 -b .1123092
 pushd nss
-%patch103 -p1 -b .revert-ckm-tls12
-%patch104 -p1 -b .disable-ems
 %patch105 -p1 -b .abi_lib
 %patch106 -p1 -b .abi_tests
 popd
 %patch110 -p0 -b .sni_c_v_fix
+%patch201 -p0 -b .skip_util_gtest
+%patch219 -p1 -b .pem-decoding
 pushd nss
-%patch200 -p1 -b .check_policy_file
-%patch201 -p1 -b .skip_util_gtest
-%patch202 -p1 -b .disable-curve25519
-%patch209 -p1 -b .disable_ciphers
-%patch210 -p1 -b .disable-curve25519-gtests
-%patch211 -p1 -b .disable-curve25519-tests
-%patch212 -p1 -b .disable-chacha20-gtests
-%patch213 -p1 -b .disable-chacha20-tests
-%patch214 -p1 -b .disable-pss-gtests
-%patch215 -p1 -b .disable-pss-tests
-%patch216 -p1 -b .disable-unsupported-gtests
-%patch217 -p1 -b .disable-sha384-tests
-%patch218 -p1 -b .disable-sha384-gtests
-%patch219 -p1 -b .disable-ems-gtests
-%patch220 -p1 -b .disable-rsa-fips-186-4-tests
-%patch222 -p1 -b .nologin-keep-trust
-%patch223 -p1 -R -b .sql-default
-%patch224 -p1 -b .enable-normal-normal-tests
-%patch225 -p1 -b .enable-ecc-tests
-%patch226 -p1 -b .pkcs12-iterations-limit
-%patch227 -p1 -b .devslot-reinsert
-%patch228 -p1 -b .code-signing-trust
-%patch229 -p1 -b .ssl2-server-random
+%patch130 -p1 -b .reorder-cipher-suites-gtests
+%patch136 -p1 -R -b .sql-default
+%patch139 -p1 -b .modutil-skip-changepw-fips
+%patch148 -R -p1 -b .sysinit-userdb
+%patch147 -p1 -b .dsa-policy
+%patch149 -p1 -b .skip-sysinit-gtests
+%patch150 -p1 -b .ssl2hello
+%patch151 -p1 -b .skip-tls13-fips-mode
+#%patch152 -p1 -b .version-range-set
+%patch153 -p1 -b .fips-disable-tls13
+%patch154 -p1 -b .disable-pkcs1-sigalgs-tls13
+%patch155 -p1 -b .post-handshake-auth-with-tickets
 popd
-%patch221 -p1 -b .pem-decoding
+%patch156 -p1 -b .pub-priv-mechs
+%patch157 -p1 -b .ipsec-usage
+pushd nss
+%patch158 -p1 -b .pkix-name-constraints-common-name
+popd
+%patch159 -p1 -b .ssl-cleanup
+%patch160 -p1 -b .cert1024
+%patch170 -p1 -b .ssl-rhel6-gtests-fix
+%patch54 -p1 -b .ca-2.32
 
-#########################################################
+# ########################################################
 # Higher-level libraries and test tools need access to
 # module-private headers from util, freebl, and softoken
 # until fixed upstream we must copy some headers locally
@@ -359,9 +351,6 @@ export NSS_NO_SSL2=1
 FREEBL_NO_DEPEND=1
 export FREEBL_NO_DEPEND
 
-NSS_FORCE_FIPS=1
-export NSS_FORCE_FIPS
-
 # Enable compiler optimizations and disable debugging code
 BUILD_OPT=1
 export BUILD_OPT
@@ -404,7 +393,7 @@ export USE_SYSTEM_FREEBL=1
 # wtc has suggested using NSS_USE_SYSTEM_FREEBL
 export NSS_USE_SYSTEM_FREEBL=1
 # prevents running the sha224 portion of the powerup selftest when testing
-export NO_SHA224_AVAILABLE=1
+#export NO_SHA224_AVAILABLE=1
 
 export FREEBL_LIBS=`/usr/bin/pkg-config --libs nss-softokn`
 
@@ -437,7 +426,7 @@ export IN_TREE_FREEBL_HEADERS_FIRST=1
 
 export NSS_BLTEST_NOT_AVAILABLE=1
 
-export NSS_DISABLE_TLS_1_3=1
+export NSS_FORCE_FIPS=1
 
 %{__make} -C ./nss/coreconf
 %{__make} -C ./nss/lib/dbm
@@ -528,8 +517,6 @@ export USE_64
 
 export NSS_BLTEST_NOT_AVAILABLE=1
 
-export NSS_DISABLE_TLS_1_3=1
-
 export NSS_FORCE_FIPS=1
 
 # needed for the fips manging test
@@ -590,13 +577,6 @@ pushd ./nss/tests/
 #  nss_ssl_tests: crl bypass_normal normal_bypass normal_fips fips_normal iopr
 #  nss_ssl_run: cov auth stress
 
-# Disable some tests known not to work with older nss-softokn
-# - EncryptDeriveTests/EncryptDeriveTest, Encrypt3DeriveTests/EncryptDerive3Test:
-#   https://bugzilla.mozilla.org/show_bug.cgi?id=1236720
-# - Pkcs11EcdsaSha256Test.ImportPointNotOnCurve, Pkcs11EcdsaSha256Test.ImportSpkiPointNotOnCurve:
-#   https://bugzilla.mozilla.org/show_bug.cgi?id=1057161
-export GTESTFILTER='-EncryptDeriveTests/EncryptDeriveTest.*:Encrypt3DeriveTests/EncryptDerive3Test.*:Pkcs11EcdsaSha256Test.ImportPointNotOnCurve:Pkcs11EcdsaSha256Test.ImportSpkiPointNotOnCurve'
-
 # Uncomment these lines if you need to temporarily
 # disable the ssl test suites for faster test builds
 # global nss_ssl_tests "normal_fips"
@@ -613,7 +593,7 @@ popd
 # GREP_EXIT_STATUS > 1 would indicate an error in grep such as failure to find the log file.
 killall $RANDSERV || :
 
-TEST_FAILURES=$(grep -c FAILED ./tests_results/security/localhost.1/output.log) || GREP_EXIT_STATUS=$?
+TEST_FAILURES=$(grep -c -- '- FAILED$' ./tests_results/security/localhost.1/output.log) || GREP_EXIT_STATUS=$?
 if [ ${GREP_EXIT_STATUS:-0} -eq 1 ]; then
   echo "okay: test suite detected no failures"
 else
@@ -678,7 +658,7 @@ do
 done
 
 # Copy the binaries we want
-for file in certutil cmsutil crlutil modutil pk12util signtool signver ssltap
+for file in certutil cmsutil crlutil modutil nss-policy-check pk12util signtool signver ssltap
 do
   %{__install} -p -m 755 dist/*.OBJ/bin/$file $RPM_BUILD_ROOT/%{_bindir}
 done
@@ -784,6 +764,7 @@ fi
 %{_bindir}/cmsutil
 %{_bindir}/crlutil
 %{_bindir}/modutil
+%{_bindir}/nss-policy-check
 %{_bindir}/pk12util
 %{_bindir}/signtool
 %{_bindir}/signver
@@ -806,6 +787,7 @@ fi
 %attr(0644,root,root) %doc /usr/share/man/man1/cmsutil.1.gz
 %attr(0644,root,root) %doc /usr/share/man/man1/crlutil.1.gz
 %attr(0644,root,root) %doc /usr/share/man/man1/modutil.1.gz
+%attr(0644,root,root) %doc /usr/share/man/man1/nss-policy-check.1.gz
 %attr(0644,root,root) %doc /usr/share/man/man1/pk12util.1.gz
 %attr(0644,root,root) %doc /usr/share/man/man1/signtool.1.gz
 %attr(0644,root,root) %doc /usr/share/man/man1/signver.1.gz
@@ -868,9 +850,9 @@ fi
 %{_includedir}/nss3/smime.h
 %{_includedir}/nss3/ssl.h
 %{_includedir}/nss3/sslerr.h
-%{_includedir}/nss3/sslexp.h
 %{_includedir}/nss3/sslproto.h
 %{_includedir}/nss3/sslt.h
+%{_includedir}/nss3/sslexp.h
 
 
 %files pkcs11-devel
@@ -891,6 +873,33 @@ fi
 
 
 %changelog
+*Wed Oct 23 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-7
+- Add back missing Mozilla Policy
+
+* Tue Oct 15 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-6
+- Fix gtest failure detection
+
+* Tue Oct 15 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-5
+- Turn off cp TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 by default
+
+* Fri Oct 11 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-4
+- Fix cipher order
+- fix broken gtests
+
+* Tue Oct 8 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-3
+- fix problems found by qe:
+- AC13: SSL3 "disabled"
+- AC26: Chacha20 and TLS 1.3 ciphers should be prioritized
+-   SHA-384 PRF => *_256_GCM_SHA384 ciphers should be reenabled for consistency
+- AC28: nss-policy-check is missing from packages and $PATH
+- extra: apostrophes in certutil manpage got mangled
+
+* Mon Aug 26 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-2
+- restore Conflicts: with curl
+
+* Mon Aug 26 2019 Bob Relyea <rrelyea@redhat.com> - 3.44.0-1
+- Rebase to 3.44.0 with critical fixes
+
 * Tue Aug 28 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-9
 - Backport upstream fix for CVE-2018-12384
 - Remove nss-lockcert-api-change.patch, which turned out to be a

@@ -1,0 +1,29 @@
+diff --git a/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c b/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
+--- a/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
++++ b/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
+@@ -3145,16 +3145,25 @@ PKIX_PL_Cert_CheckNameConstraints(
+         PKIX_NULLCHECK_ONE(cert);
+ 
+         if (nameConstraints != NULL) {
+ 
+                 arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
+                 if (arena == NULL) {
+                         PKIX_ERROR(PKIX_OUTOFMEMORY);
+                 }
++                /* only check common Name if the usage requires it */
++                if (treatCommonNameAsDNSName) {
++                    SECCertificateUsage certificateUsage;
++    		    certificateUsage = ((PKIX_PL_NssContext*)plContext)->certificateUsage;
++		     if ((certificateUsage != certificateUsageSSLServer) && 
++                        (certificateUsage != certificateUsageIPsec)) {
++			treatCommonNameAsDNSName = PKIX_FALSE;
++		    }
++                }
+ 
+                 /* This NSS call returns Subject Alt Names. If
+                  * treatCommonNameAsDNSName is true, it also returns the
+                  * Subject Common Name
+                  */
+                 PKIX_CERT_DEBUG
+                     ("\t\tCalling CERT_GetConstrainedCertificateNames\n");
+                 nssSubjectNames = CERT_GetConstrainedCertificateNames

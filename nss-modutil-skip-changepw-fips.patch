@@ -1,0 +1,22 @@
+# HG changeset patch
+# User Daiki Ueno <dueno@redhat.com>
+# Date 1523546409 -7200
+#      Thu Apr 12 17:20:09 2018 +0200
+# Node ID 919e116728f29263c17ec31716ac2bd04c10e9ca
+# Parent  2eefd697d661efb82a77c84d893e6fbceefdf458
+Bug 1453408, modutil -changepw fails in FIPS mode if password is an empty string
+
+diff --git a/cmd/modutil/pk11.c b/cmd/modutil/pk11.c
+--- a/cmd/modutil/pk11.c
++++ b/cmd/modutil/pk11.c
+@@ -764,6 +764,10 @@ ChangePW(char *tokenName, char *pwFile, 
+             ret = CHANGEPW_FAILED_ERR;
+             goto loser;
+         }
++    } else if (PK11_IsFIPS() && *newpw == '\0' && PK11_CheckUserPassword(slot, newpw) == SECSuccess) {
++        /* Workaround to suppress harmless error in FIPS mode:
++         * When explicitly setting empty password while the old
++         * password is also empty, skip */
+     } else {
+         if (PK11_ChangePW(slot, oldpw, newpw) != SECSuccess) {
+             PR_fprintf(PR_STDERR, errStrings[CHANGEPW_FAILED_ERR], tokenName);

@@ -1,0 +1,12 @@
+diff -up nss/lib/ssl/sslsock.c.ssl2hello nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.ssl2hello	2019-04-26 11:31:02.139693304 +0200
++++ nss/lib/ssl/sslsock.c	2019-04-26 11:31:36.842975724 +0200
+@@ -86,7 +86,7 @@ static sslOptions ssl_defaults = {
+     .enableTls13CompatMode = PR_FALSE,
+     .enableDtlsShortHeader = PR_FALSE,
+     .enableHelloDowngradeCheck = PR_FALSE,
+-    .enableV2CompatibleHello = PR_FALSE,
++    .enableV2CompatibleHello = PR_TRUE,
+     .enablePostHandshakeAuth = PR_FALSE
+ };
+ 
