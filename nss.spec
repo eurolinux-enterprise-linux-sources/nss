@@ -1,5 +1,5 @@
-%global nspr_version 4.13.0
-%global nss_util_version 3.28.3
+%global nspr_version 4.19.0
+%global nss_util_version 3.36.0
 %global nss_softokn_fips_version 3.14.3
 %global nss_softokn_version 3.14.3
 %global required_softokn_build_version -22
@@ -23,8 +23,8 @@
 
 Summary:          Network Security Services
 Name:             nss
-Version:          3.28.4
-Release:          4%{?dist}
+Version:          3.36.0
+Release:          8%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -67,7 +67,8 @@ Source21:         PayPalICA.cert
 Source22:         nss-rhel6.config
 
 Patch2:           add-relro-linker-option.patch
-Patch3:           renegotiate-transitional.patch
+Patch3:           nss-noexecstack.patch
+Patch4:           renegotiate-transitional.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=402712
 Patch6:           nss-enable-pem.patch
 # Below reference applies to most pem module related patches
@@ -108,8 +109,6 @@ Patch62: nss-fix-deadlock-squash.patch
 Patch69: define-uint32.patch
 Patch70: disable-pss.patch
 Patch71: nss-disable-sha384.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1054373
-Patch74: race.patch
 # Local patch to be carried forward as we rebase nss
 # Reverse the changing of the cipher-orders done upstream
 Patch90: keep_old_cipher_suite_order.patch
@@ -117,7 +116,6 @@ Patch90: keep_old_cipher_suite_order.patch
 Patch92: p-1058933-b-reversed.patch
 # Revert upstream increase of default key size to 2048 bits for certutil
 Patch93: 1129573-certutil-key-size-reversed.patch
-Patch94: nss-3.16-token-init-race.patch
 # Patch to keep the TLS protocol versions that are enabled by default
 Patch98: nss-revert-tls-version-defaults.patch
 Patch102: enable-tls-12-by-default.patch
@@ -126,21 +124,12 @@ Patch104: disable-extended-master-secret-with-old-softoken.patch
 Patch105: nss-prevent-abi-issue.patch
 Patch106: nss-tests-prevent-abi-issue.patch
 Patch110: nss-sni-c-v-fix.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1341054
-Patch132: nss-tstclnt-optspec.patch
-Patch133: nss-ca-2.14.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1328122
-Patch134: nss-ssl3gthr.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1279520
 Patch200: nss-check-policy-file.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1280846
 Patch201: nss-skip-util-gtest.patch
 # Disable X25519 and ChaCha20, until nss-softokn is rebased
 Patch202: nss-disable-curve25519.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1320932
-Patch207: moz-1320932.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1321806
-Patch208: moz-1321806.patch
 # Patch to disable TLS_ECDHE_{RSA,ECDSA}_WITH_AES_128_CBC_SHA256
 # We encourage new applications to use the GCM variants.
 Patch209: nss-disable-ciphers.patch
@@ -158,15 +147,32 @@ Patch211: nss-disable-curve25519-tests.patch
 Patch212: nss-disable-chacha20-gtests.patch
 Patch213: nss-disable-chacha20-tests.patch
 Patch214: nss-disable-pss-gtests.patch
-Patch215: nss-disable-unsupported-gtests.patch
-Patch216: nss-disable-sha384-tests.patch
-Patch217: nss-disable-sha384-gtests.patch
+Patch215: nss-disable-pss-tests.patch
+Patch216: nss-disable-unsupported-gtests.patch
+Patch217: nss-disable-sha384-tests.patch
+Patch218: nss-disable-sha384-gtests.patch
+Patch219: nss-disable-rsa-fips-186-4-tests.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1298692
-Patch218: nss-disable-ems-gtests.patch
+Patch220: nss-disable-ems-gtests.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1427481
-Patch219: nss-pem-catch-failed-ASN1-decoding-of-RSA-keys.patch
-# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1377618
-Patch220: nss-transcript.patch
+Patch221: nss-pem-catch-failed-ASN1-decoding-of-RSA-keys.patch
+# not upstreamed: preserve trust settings after password change in tests
+Patch222: nss-nologin-keep-trust.patch
+# To revert the change in:
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1377940
+Patch223: nss-sql-default.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1444960
+Patch224: nss-tests-ssl-normal-normal.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1445989
+Patch225: nss-tests-ssl-ecc-skip.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1278071
+Patch226: nss-pkcs12-iterations-limit.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1447628
+Patch227: nss-devslot-reinsert.patch
+Patch228: nss-code-signing-trust.patch
+# To revert the change in:
+# https://hg.mozilla.org/projects/nss/rev/896e3eb3a799
+Patch229: nss-lockcert-api-change.patch
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -243,7 +249,8 @@ low level services.
 %setup -q -T -D -n %{name}-%{version} -a 12
 
 %patch2 -p0 -b .relro
-%patch3 -p0 -b .transitional
+%patch3 -p0 -b .noexecstack
+%patch4 -p0 -b .transitional
 %patch6 -p0 -b .libpem
 %patch16 -p0 -b .539183
 # link pem against buildroot's freebl, essential when mixing and matching
@@ -257,19 +264,17 @@ low level services.
 %patch51 -p0 -b .compile_Werror
 pushd nss
 %patch52 -p0 -b .disableSSL2libssl
-%patch53 -p0 -b .disableSSL2tests
+%patch53 -p1 -b .disableSSL2tests
 popd
 %patch69 -p0 -b .uint32
 pushd nss
 %patch62 -p1 -b .fix_deadlock
 %patch70 -p1 -b .disable_pss
 %patch71 -p1 -b .disable_sha384
-%patch74 -p1 -b .race
 popd
 # moved patch90 to last position
 %patch92 -p0 -b .keep_sha1_default
 %patch93 -p0 -b .keep_1024_default
-%patch94 -p0 -b .init-token-race
 pushd nss/lib/ckfw/builtins
 popd
 # attention, reverting patch98
@@ -284,27 +289,31 @@ pushd nss
 popd
 %patch110 -p0 -b .sni_c_v_fix
 pushd nss
-%patch132 -p1 -b .tstclnt-optspec
-%patch133 -p1 -b .ca-2.14.patch
-%patch134 -p1 -b .ssl3gthr
 %patch200 -p1 -b .check_policy_file
-%patch201 -p0 -b .skip_util_gtest
+%patch201 -p1 -b .skip_util_gtest
 %patch202 -p1 -b .disable-curve25519
-%patch207 -p1 -b .fix_ssl_sh_typo
-%patch208 -p1 -b .abort_version_check
 %patch209 -p1 -b .disable_ciphers
 %patch210 -p1 -b .disable-curve25519-gtests
 %patch211 -p1 -b .disable-curve25519-tests
 %patch212 -p1 -b .disable-chacha20-gtests
 %patch213 -p1 -b .disable-chacha20-tests
 %patch214 -p1 -b .disable-pss-gtests
-%patch215 -p1 -b .disable-unsupported-gtests
-%patch216 -p1 -b .disable-sha384-tests
-%patch217 -p1 -b .disable-sha384-gtests
-%patch218 -p1 -b .disable-ems-gtests
-%patch220 -p1 -b .transcript
+%patch215 -p1 -b .disable-pss-tests
+%patch216 -p1 -b .disable-unsupported-gtests
+%patch217 -p1 -b .disable-sha384-tests
+%patch218 -p1 -b .disable-sha384-gtests
+%patch219 -p1 -b .disable-ems-gtests
+%patch220 -p1 -b .disable-rsa-fips-186-4-tests
+%patch222 -p1 -b .nologin-keep-trust
+%patch223 -p1 -R -b .sql-default
+%patch224 -p1 -b .enable-normal-normal-tests
+%patch225 -p1 -b .enable-ecc-tests
+%patch226 -p1 -b .pkcs12-iterations-limit
+%patch227 -p1 -b .devslot-reinsert
+%patch228 -p1 -b .code-signing-trust
+%patch229 -p1 -R -b .lockcert-api-change
 popd
-%patch219 -p1 -b .pem-decoding
+%patch221 -p1 -b .pem-decoding
 
 #########################################################
 # Higher-level libraries and test tools need access to
@@ -350,6 +359,9 @@ export NSS_NO_SSL2=1
 
 FREEBL_NO_DEPEND=1
 export FREEBL_NO_DEPEND
+
+NSS_FORCE_FIPS=1
+export NSS_FORCE_FIPS
 
 # Enable compiler optimizations and disable debugging code
 BUILD_OPT=1
@@ -425,6 +437,9 @@ export IN_TREE_FREEBL_HEADERS_FIRST=1
 ##### phase 2: build the rest of nss
 
 export NSS_BLTEST_NOT_AVAILABLE=1
+
+export NSS_DISABLE_TLS_1_3=1
+
 %{__make} -C ./nss/coreconf
 %{__make} -C ./nss/lib/dbm
 
@@ -514,6 +529,10 @@ export USE_64
 
 export NSS_BLTEST_NOT_AVAILABLE=1
 
+export NSS_DISABLE_TLS_1_3=1
+
+export NSS_FORCE_FIPS=1
+
 # needed for the fips manging test
 export SOFTOKEN_LIB_DIR=%{_libdir}
 
@@ -571,6 +590,13 @@ pushd ./nss/tests/
 %endif
 #  nss_ssl_tests: crl bypass_normal normal_bypass normal_fips fips_normal iopr
 #  nss_ssl_run: cov auth stress
+
+# Disable some tests known not to work with older nss-softokn
+# - EncryptDeriveTests/EncryptDeriveTest, Encrypt3DeriveTests/EncryptDerive3Test:
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1236720
+# - Pkcs11EcdsaSha256Test.ImportPointNotOnCurve, Pkcs11EcdsaSha256Test.ImportSpkiPointNotOnCurve:
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1057161
+export GTESTFILTER='-EncryptDeriveTests/EncryptDeriveTest.*:Encrypt3DeriveTests/EncryptDerive3Test.*:Pkcs11EcdsaSha256Test.ImportPointNotOnCurve:Pkcs11EcdsaSha256Test.ImportSpkiPointNotOnCurve'
 
 # Uncomment these lines if you need to temporarily
 # disable the ssl test suites for faster test builds
@@ -843,6 +869,7 @@ fi
 %{_includedir}/nss3/smime.h
 %{_includedir}/nss3/ssl.h
 %{_includedir}/nss3/sslerr.h
+%{_includedir}/nss3/sslexp.h
 %{_includedir}/nss3/sslproto.h
 %{_includedir}/nss3/sslt.h
 
@@ -865,8 +892,46 @@ fi
 
 
 %changelog
-* Fri Aug  4 2017 Daiki Ueno <dueno@redhat.com> - 3.28.4-4
-- Backport patch to simplify transcript calculation for CertificateVerify
+* Wed Apr 18 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-8
+- Restore CERT_LockCertTrust and CERT_UnlockCertTrust back in cert.h
+
+* Thu Mar 29 2018 Kai Engert <kaie@redhat.com> - 3.36.0-7
+- rebuild
+
+* Wed Mar 28 2018 Kai Engert <kaie@redhat.com> - 3.36.0-6
+- Keep legacy code signing trust flags for backwards compatibility
+
+* Tue Mar 27 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-5
+- Decrease the iteration count of PKCS#12 for compatibility with Windows
+- Fix deadlock when a token is re-inserted while a client process is running
+
+* Thu Mar 22 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-4
+- Ignore tests which only works with newer nss-softokn
+
+* Mon Mar 19 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-3
+- Use the correct tarball of NSS 3.36 release
+- Ignore EncryptDeriveTest which only works with newer nss-softokn
+
+* Thu Mar 15 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-2
+- Don't skip non-FIPS and ECC test cases in ssl.sh
+
+* Thu Mar  8 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-1
+- Rebase to NSS 3.36.0
+
+* Wed Feb 28 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-0.1.beta
+- Rebase to NSS 3.36.0 BETA
+- Remove upstreamed nss-is-token-present-race.patch
+- Revert the upstream changes that default to sql database
+
+* Fri Feb 16 2018 Daiki Ueno <dueno@redhat.com> - 3.34.0-3
+- Replace race.patch and nss-3.16-token-init-race.patch with
+  a proper upstream fix
+
+* Thu Dec  7 2017 Daiki Ueno <dueno@redhat.com> - 3.34.0-2
+- Don't restrict nss_cycles to sharedb
+
+* Mon Dec  4 2017 Daiki Ueno <dueno@redhat.com> - 3.34.0-1
+- Rebase to NSS 3.34.0
 
 * Mon May 15 2017 Daiki Ueno <dueno@redhat.com> - 3.28.4-3
 - Fix zero-length record treatment for stream ciphers and SSLv2

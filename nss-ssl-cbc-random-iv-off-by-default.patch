@@ -1,16 +1,16 @@
 diff -up nss/lib/ssl/sslsock.c.cbcrandomivoff nss/lib/ssl/sslsock.c
---- nss/lib/ssl/sslsock.c.cbcrandomivoff	2016-08-17 14:53:44.387930101 +0200
-+++ nss/lib/ssl/sslsock.c	2016-08-17 14:55:15.761844201 +0200
-@@ -75,7 +75,7 @@ static sslOptions ssl_defaults = {
-     3,                     /* enableRenegotiation (default: transitional) */
-     PR_FALSE,              /* requireSafeNegotiation */
-     PR_FALSE,              /* enableFalseStart   */
--    PR_TRUE,               /* cbcRandomIV        */
-+    PR_FALSE,              /* cbcRandomIV        */ /* defaults to off for compatibility */
-     PR_FALSE,              /* enableOCSPStapling */
-     PR_FALSE,              /* enableNPN          */
-     PR_TRUE,               /* enableALPN         */
-@@ -3518,9 +3518,9 @@ ssl_SetDefaultsFromEnvironment(void)
+--- nss/lib/ssl/sslsock.c.cbcrandomivoff	2018-02-28 11:53:12.468281549 +0100
++++ nss/lib/ssl/sslsock.c	2018-02-28 11:54:22.068723052 +0100
+@@ -70,7 +70,7 @@ static sslOptions ssl_defaults = {
+     .enableRenegotiation = SSL_RENEGOTIATE_TRANSITIONAL,
+     .requireSafeNegotiation = PR_FALSE,
+     .enableFalseStart = PR_FALSE,
+-    .cbcRandomIV = PR_TRUE,
++    .cbcRandomIV = PR_FALSE,
+     .enableOCSPStapling = PR_FALSE,
+     .enableNPN = PR_FALSE,
+     .enableALPN = PR_TRUE,
+@@ -3638,9 +3638,9 @@ ssl_SetDefaultsFromEnvironment(void)
                         PR_TRUE));
          }
          ev = PR_GetEnvSecure("NSS_SSL_CBC_RANDOM_IV");

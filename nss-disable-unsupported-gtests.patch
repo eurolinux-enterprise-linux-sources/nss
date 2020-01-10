@@ -1,6 +1,17 @@
+diff -up nss/gtests/manifest.mn.disable-unsupported-gtests nss/gtests/manifest.mn
+--- nss/gtests/manifest.mn.disable-unsupported-gtests	2018-02-28 16:34:18.029199431 +0100
++++ nss/gtests/manifest.mn	2018-02-28 16:34:21.577119027 +0100
+@@ -24,7 +24,6 @@ NSS_SRCDIRS = \
+ 	cryptohi_gtest \
+ 	der_gtest \
+ 	pk11_gtest \
+-	softoken_gtest \
+ 	ssl_gtest \
+ 	nss_bogo_shim \
+ 	$(NULL)
 diff -up nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtests nss/gtests/pk11_gtest/pk11_export_unittest.cc
---- nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtests	2017-02-17 14:20:06.000000000 +0100
-+++ nss/gtests/pk11_gtest/pk11_export_unittest.cc	2017-03-27 10:35:56.137428079 +0200
+--- nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtests	2018-02-27 15:47:47.000000000 +0100
++++ nss/gtests/pk11_gtest/pk11_export_unittest.cc	2018-02-28 16:34:06.309465039 +0100
 @@ -61,6 +61,4 @@ class Pkcs11ExportTest : public ::testin
  
  TEST_F(Pkcs11ExportTest, DeriveNonExport) { Derive(false); }
@@ -9,8 +20,8 @@ diff -up nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtest
 -
  }  // namespace nss_test
 diff -up nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtests nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc
---- nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtests	2017-02-17 14:20:06.000000000 +0100
-+++ nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc	2017-03-27 10:35:56.137428079 +0200
+--- nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtests	2018-02-27 15:47:47.000000000 +0100
++++ nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc	2018-02-28 16:34:06.309465039 +0100
 @@ -72,25 +72,4 @@ class Pkcs11Pbkdf2Test : public ::testin
    }
  };
@@ -38,9 +49,9 @@ diff -up nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtest
 -
  }  // namespace nss_test
 diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gtests nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
---- nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gtests	2017-03-27 10:36:52.458275412 +0200
-+++ nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2017-03-27 10:37:18.319745407 +0200
-@@ -335,7 +335,7 @@ INSTANTIATE_CIPHER_TEST_P(
+--- nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gtests	2018-02-28 16:34:06.303465175 +0100
++++ nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2018-02-28 16:34:06.309465039 +0100
+@@ -349,7 +349,7 @@ INSTANTIATE_CIPHER_TEST_P(
      TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
      TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
  INSTANTIATE_CIPHER_TEST_P(
@@ -49,3 +60,13 @@ diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gt
      kDummySignatureSchemesParams, TLS_ECDH_ECDSA_WITH_NULL_SHA,
      TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
      TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_ECDSA_WITH_NULL_SHA,
+diff -up nss/gtests/ssl_gtest/ssl_skip_unittest.cc.disable-unsupported-gtests nss/gtests/ssl_gtest/ssl_skip_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_skip_unittest.cc.disable-unsupported-gtests	2018-02-28 16:34:34.820818878 +0100
++++ nss/gtests/ssl_gtest/ssl_skip_unittest.cc	2018-02-28 16:34:42.022655661 +0100
+@@ -243,6 +243,4 @@ INSTANTIATE_TEST_CASE_P(
+ INSTANTIATE_TEST_CASE_P(SkipVariants, TlsSkipTest,
+                         ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
+                                            TlsConnectTestBase::kTlsV11V12));
+-INSTANTIATE_TEST_CASE_P(Skip13Variants, Tls13SkipTest,
+-                        TlsConnectTestBase::kTlsVariantsAll);
+ }  // namespace nss_test

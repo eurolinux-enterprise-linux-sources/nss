@@ -38,6 +38,7 @@
 #include "nss.h"
 #include "ssl.h"
 #include "sslproto.h"
+#include "sslexp.h"
 #include "cert.h"
 #include "certt.h"
 #include "ocsp.h"
@@ -159,17 +160,16 @@ static void
 PrintUsageHeader(const char *progName)
 {
     fprintf(stderr,
-            "Usage: %s -n rsa_nickname -p port [-BDENRbjlmrsuvx] [-w password]\n"
+            "Usage: %s -n rsa_nickname -p port [-BDENRZbjlmrsuvx] [-w password]\n"
             "         [-t threads] [-i pid_file] [-c ciphers] [-Y] [-d dbdir] [-g numblocks]\n"
             "         [-f password_file] [-L [seconds]] [-M maxProcs] [-P dbprefix]\n"
             "         [-V [min-version]:[max-version]] [-a sni_name]\n"
             "         [ T <good|revoked|unknown|badsig|corrupted|none|ocsp>] [-A ca]\n"
             "         [-C SSLCacheEntries] [-S dsa_nickname] -Q [-I groups]"
-#ifndef NSS_DISABLE_ECC
             " [-e ec_nickname]"
-#endif /* NSS_DISABLE_ECC */
             "\n"
-            "         -U [0|1] -H [0|1|2] -W [0|1]\n",
+            "         -U [0|1] -H [0|1|2] -W [0|1]\n"
+            "\n",
             progName);
 }
 
@@ -219,7 +219,7 @@ PrintParameterUsage()
         "-A <ca> Nickname of a CA used to sign a stapled cert status\n"
         "-U override default ECDHE ephemeral key reuse, 0: refresh, 1: reuse\n"
         "-H override default DHE server support, 0: disable, 1: enable, "
-        " 2: require DH named groups\n"
+        "   2: require DH named groups [RFC7919]\n"
         "-W override default DHE server weak parameters support, 0: disable, 1: enable\n"
         "-c Restrict ciphers\n"
         "-Y prints cipher values allowed for parameter -c and exits\n"
@@ -227,7 +227,8 @@ PrintParameterUsage()
         "-Q enables ALPN for HTTP/1.1 [RFC7301]\n"
         "-I comma separated list of enabled groups for TLS key exchange.\n"
         "   The following values are valid:\n"
-        "   P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n",
+        "   P256, P384, P521, x25519, FF2048, FF3072, FF4096, FF6144, FF8192\n"
+        "-Z enable 0-RTT (for TLS 1.3; also use -u)\n",
         stderr);
 }
 
@@ -1953,6 +1954,10 @@ server_main(
         if (enabledVersions.max < SSL_LIBRARY_VERSION_TLS_1_3) {
             errExit("You tried enabling 0RTT without enabling TLS 1.3!");
         }
+        rv = SSL_SetupAntiReplay(10 * PR_USEC_PER_SEC, 7, 14);
+        if (rv != SECSuccess) {
+            errExit("error configuring anti-replay ");
+        }
         rv = SSL_OptionSet(model_sock, SSL_ENABLE_0RTT_DATA, PR_TRUE);
         if (rv != SECSuccess) {
             errExit("error enabling 0RTT ");
@@ -2305,7 +2310,9 @@ main(int argc, char **argv)
                 if (SECU_ParseSSLVersionRangeString(optstate->value,
                                                     enabledVersions, &enabledVersions) !=
                     SECSuccess) {
+                    fprintf(stderr, "Bad version specified.\n");
                     Usage(progName);
+                    exit(1);
                 }
                 break;
 
@@ -2339,7 +2346,6 @@ main(int argc, char **argv)
                 dir = optstate->value;
                 break;
 
-#ifndef NSS_DISABLE_ECC
             case 'e':
                 if (certNicknameIndex >= MAX_CERT_NICKNAME_ARRAY_INDEX) {
                     Usage(progName);
@@ -2347,7 +2353,6 @@ main(int argc, char **argv)
                 }
                 certNicknameArray[certNicknameIndex++] = PORT_Strdup(optstate->value);
                 break;
-#endif /* NSS_DISABLE_ECC */
 
             case 'f':
                 pwdata.source = PW_FROMFILE;
@@ -2549,6 +2554,14 @@ main(int argc, char **argv)
         tmp = PR_GetEnvSecure("TMPDIR");
     if (!tmp)
         tmp = PR_GetEnvSecure("TEMP");
+
+    /* Call the NSS initialization routines */
+    rv = NSS_Initialize(dir, certPrefix, certPrefix, SECMOD_DB, NSS_INIT_READONLY);
+    if (rv != SECSuccess) {
+        fputs("NSS_Init failed.\n", stderr);
+        exit(8);
+    }
+
     if (envString) {
         /* we're one of the children in a multi-process server. */
         listen_sock = PR_GetInheritedFD(inheritableSockName);
@@ -2602,13 +2615,6 @@ main(int argc, char **argv)
 
     /* set our password function */
     PK11_SetPasswordFunc(SECU_GetModulePassword);
-
-    /* Call the NSS initialization routines */
-    rv = NSS_Initialize(dir, certPrefix, certPrefix, SECMOD_DB, NSS_INIT_READONLY);
-    if (rv != SECSuccess) {
-        fputs("NSS_Init failed.\n", stderr);
-        exit(8);
-    }
 
     /* all SSL3 cipher suites are enabled by default. */
     if (cipherString) {
@@ -2677,9 +2683,7 @@ main(int argc, char **argv)
                     certNicknameArray[i]);
             exit(11);
         }
-#ifdef NSS_DISABLE_ECC
         if (privKey[i]->keyType != ecKey)
-#endif
             setupCertStatus(certStatusArena, ocspStaplingMode, cert[i], i, &pwdata);
     }
 

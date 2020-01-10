@@ -1,0 +1,19 @@
+diff -up nss/tests/cert/cert.sh.nologin-keep-trust nss/tests/cert/cert.sh
+--- nss/tests/cert/cert.sh.nologin-keep-trust	2017-12-05 18:07:52.149743206 +0100
++++ nss/tests/cert/cert.sh	2017-12-05 18:09:29.481655202 +0100
+@@ -1258,6 +1258,15 @@ cert_ssl()
+   cp -r ${R_CLIENTDIR} ${R_NOLOGINDIR}
+   # change the password to empty
+   certu -W -d "${R_NOLOGINDIR}" -f "${R_PWFILE}" -@ "${R_EMPTY_FILE}" 2>&1
++
++  CU_ACTION="Modify trust attributes of Root CA -t TC,TC,TC"
++  certu -M -n "TestCA" -t "TC,TC,TC" -d ${R_NOLOGINDIR}
++
++  CU_ACTION="Modify trust attributes of DSA Root CA -t TC,TC,TC"
++  certu -M -n "TestCA-dsa" -t "TC,TC,TC" -d ${R_NOLOGINDIR}
++
++  CU_ACTION="Modify trust attributes of EC Root CA -t TC,TC,TC"
++  certu -M -n "TestCA-ec" -t "TC,TC,TC" -d ${R_NOLOGINDIR}
+ }
+ 
+ ############################## cert_stresscerts ################################

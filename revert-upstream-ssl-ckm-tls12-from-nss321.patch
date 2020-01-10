@@ -1,7 +1,7 @@
 diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
---- nss/lib/ssl/ssl3con.c.revert-ckm-tls12	2017-02-28 10:45:39.289711174 +0100
-+++ nss/lib/ssl/ssl3con.c	2017-02-28 10:48:24.861568640 +0100
-@@ -3697,16 +3697,14 @@ ssl3_ComputeMasterSecretInt(sslSocket *s
+--- nss/lib/ssl/ssl3con.c.revert-ckm-tls12	2018-02-28 12:33:14.138452668 +0100
++++ nss/lib/ssl/ssl3con.c	2018-02-28 12:38:15.108704202 +0100
+@@ -3306,16 +3306,14 @@ ssl3_ComputeMasterSecretInt(sslSocket *s
      CK_FLAGS keyFlags;
      CK_VERSION pms_version;
      CK_VERSION *pms_version_ptr = NULL;
@@ -24,9 +24,9 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
          keyFlags = CKF_SIGN | CKF_VERIFY;
      } else if (isTLS) {
          if (isDH)
-@@ -3733,16 +3731,9 @@ ssl3_ComputeMasterSecretInt(sslSocket *s
+@@ -3342,16 +3340,9 @@ ssl3_ComputeMasterSecretInt(sslSocket *s
      master_params.RandomInfo.ulClientRandomLen = SSL3_RANDOM_LENGTH;
-     master_params.RandomInfo.pServerRandom = sr;
+     master_params.RandomInfo.pServerRandom = ss->ssl3.hs.server_random;
      master_params.RandomInfo.ulServerRandomLen = SSL3_RANDOM_LENGTH;
 -    if (isTLS12) {
 -        master_params.prfHashMechanism = ssl3_GetPrfHashMechanism(ss);
@@ -38,12 +38,12 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
  
      params.data = (unsigned char *)&master_params;
 -    params.len = master_params_len;
-+    params.len  = sizeof master_params;
++    params.len = sizeof master_params;
  
      return ssl3_ComputeMasterSecretFinish(ss, master_derive, key_derive,
                                            pms_version_ptr, &params,
-@@ -3891,9 +3882,7 @@ ssl3_DeriveConnectionKeys(sslSocket *ss)
-     PK11SymKey *symKey = NULL;
+@@ -3470,9 +3461,7 @@ ssl3_DeriveConnectionKeys(sslSocket *ss,
+     PK11SymKey *derivedKeyHandle = NULL;
      void *pwArg = ss->pkcs11PinArg;
      int keySize;
 -    CK_TLS12_KEY_MAT_PARAMS key_material_params; /* may be used as a
@@ -53,12 +53,12 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
      CK_SSL3_KEY_MAT_OUT returnedKeys;
      CK_MECHANISM_TYPE key_derive;
      CK_MECHANISM_TYPE bulk_mechanism;
-@@ -3945,21 +3934,17 @@ ssl3_DeriveConnectionKeys(sslSocket *ss)
+@@ -3529,21 +3518,17 @@ ssl3_DeriveConnectionKeys(sslSocket *ss,
      calg = cipher_def->calg;
      bulk_mechanism = ssl3_Alg2Mech(calg);
  
-+    params.data    = (unsigned char *)&key_material_params;
-+    params.len     = sizeof(key_material_params);
++    params.data = (unsigned char *)&key_material_params;
++    params.len = sizeof(key_material_params);
 +
      if (isTLS12) {
 -        key_derive = CKM_TLS12_KEY_AND_MAC_DERIVE;
@@ -78,29 +78,25 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
 -
      /* CKM_SSL3_KEY_AND_MAC_DERIVE is defined to set ENCRYPT, DECRYPT, and
       * DERIVE by DEFAULT */
-     symKey = PK11_Derive(pwSpec->master_secret, key_derive, &params,
-@@ -11058,42 +11043,18 @@ ssl3_ComputeTLSFinished(sslSocket *ss, s
+     derivedKeyHandle = PK11_Derive(masterSecret, key_derive, &params,
+@@ -10634,39 +10619,16 @@ ssl3_ComputeTLSFinished(sslSocket *ss, s
                          const SSL3Hashes *hashes,
                          TLSFinished *tlsFinished)
  {
 +    const char *label;
 +    unsigned int len;
-+    HASH_HashType hashType;
      SECStatus rv;
 -    CK_TLS_MAC_PARAMS tls_mac_params;
 -    SECItem param = { siBuffer, NULL, 0 };
 -    PK11Context *prf_context;
 -    unsigned int retLen;
--
--    if (!spec->master_secret) {
--        const char *label = isServer ? "server finished" : "client finished";
--        unsigned int len = 15;
--        HASH_HashType hashType = ssl3_GetTls12HashType(ss);
--        return ssl3_TLSPRFWithMasterSecret(spec, label, len, hashes->u.raw,
--                                           hashes->len, tlsFinished->verify_data,
--                                           sizeof tlsFinished->verify_data, hashType);
--    }
  
+-    PORT_Assert(spec->masterSecret);
+-    if (!spec->masterSecret) {
+-        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+-        return SECFailure;
+-    }
+-
 -    if (spec->version < SSL_LIBRARY_VERSION_TLS_1_2) {
 -        tls_mac_params.prfMechanism = CKM_TLS_PRF;
 -    } else {
@@ -111,7 +107,7 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
 -    param.data = (unsigned char *)&tls_mac_params;
 -    param.len = sizeof(tls_mac_params);
 -    prf_context = PK11_CreateContextBySymKey(CKM_TLS_MAC, CKA_SIGN,
--                                             spec->master_secret, &param);
+-                                             spec->masterSecret, &param);
 -    if (!prf_context)
 -        return SECFailure;
 -
@@ -121,34 +117,12 @@ diff -up nss/lib/ssl/ssl3con.c.revert-ckm-tls12 nss/lib/ssl/ssl3con.c
 -                           sizeof tlsFinished->verify_data);
 -    PORT_Assert(rv != SECSuccess || retLen == sizeof tlsFinished->verify_data);
 +    label = isServer ? "server finished" : "client finished";
-+    len = 15;
-+    hashType = ssl3_GetTls12HashType(ss);
++    len   = 15;
  
 -    PK11_DestroyContext(prf_context, PR_TRUE);
-+    rv = ssl3_TLSPRFWithMasterSecret(spec, label, len, hashes->u.raw,
-+                                     hashes->len, tlsFinished->verify_data,
-+                                     sizeof tlsFinished->verify_data, hashType);
++    rv = ssl3_TLSPRFWithMasterSecret(ss, spec, label, len, hashes->u.raw,
++	hashes->len, tlsFinished->verify_data,
++	sizeof tlsFinished->verify_data);
  
      return rv;
  }
-diff -up nss/lib/ssl/ssl3ecc.c.revert-ckm-tls12 nss/lib/ssl/ssl3ecc.c
---- nss/lib/ssl/ssl3ecc.c.revert-ckm-tls12	2017-02-17 14:20:06.000000000 +0100
-+++ nss/lib/ssl/ssl3ecc.c	2017-02-28 10:45:39.292711099 +0100
-@@ -208,7 +208,7 @@ ssl3_SendECDHClientKeyExchange(sslSocket
-                    pubKey->u.ec.publicValue.len));
- 
-     if (isTLS12) {
--        target = CKM_TLS12_MASTER_KEY_DERIVE_DH;
-+        target = CKM_NSS_TLS_MASTER_KEY_DERIVE_DH_SHA256;
-     } else if (isTLS) {
-         target = CKM_TLS_MASTER_KEY_DERIVE_DH;
-     } else {
-@@ -323,7 +323,7 @@ ssl3_HandleECDHClientKeyExchange(sslSock
-     isTLS12 = (PRBool)(ss->ssl3.prSpec->version >= SSL_LIBRARY_VERSION_TLS_1_2);
- 
-     if (isTLS12) {
--        target = CKM_TLS12_MASTER_KEY_DERIVE_DH;
-+        target = CKM_NSS_TLS_MASTER_KEY_DERIVE_DH_SHA256;
-     } else if (isTLS) {
-         target = CKM_TLS_MASTER_KEY_DERIVE_DH;
-     } else {

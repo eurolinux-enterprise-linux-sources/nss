@@ -1,0 +1,20 @@
+# HG changeset patch
+# User Daiki Ueno <dueno@redhat.com>
+# Date 1520875743 -3600
+#      Mon Mar 12 18:29:03 2018 +0100
+# Node ID 46b8c79a9d00850d8481833ed508f033c6a7ddcb
+# Parent  d7331353ee3736f64fe4f37af990a52520eb6564
+Exercise SSL tests which only run under non-FIPS setting
+
+diff --git a/tests/all.sh b/tests/all.sh
+--- a/tests/all.sh
++++ b/tests/all.sh
+@@ -309,7 +309,7 @@ TESTS=${NSS_TESTS:-$tests}
+ 
+ ALL_TESTS=${TESTS}
+ 
+-nss_ssl_tests="crl iopr policy"
++nss_ssl_tests="crl iopr policy normal_normal"
+ if [ $NO_INIT_SUPPORT -eq 0 ]; then
+     nss_ssl_tests="$nss_ssl_tests fips_normal normal_fips"
+ fi

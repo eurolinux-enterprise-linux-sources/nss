@@ -1,7 +1,7 @@
-diff -up nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable_ems_gtests nss/gtests/pk11_gtest/pk11_prf_unittest.cc
---- nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable_ems_gtests	2017-01-16 10:19:10.073459080 +0100
-+++ nss/gtests/pk11_gtest/pk11_prf_unittest.cc	2017-01-16 10:21:40.408011066 +0100
-@@ -193,37 +193,4 @@ TEST_F(TlsPrfTest, ExtendedMsParamErr) {
+diff -up nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable-ems-gtests nss/gtests/pk11_gtest/pk11_prf_unittest.cc
+--- nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable-ems-gtests	2017-10-30 10:38:09.000000000 +0100
++++ nss/gtests/pk11_gtest/pk11_prf_unittest.cc	2017-11-08 17:35:00.875061831 +0100
+@@ -191,37 +191,4 @@ TEST_F(TlsPrfTest, ExtendedMsParamErr) {
    CheckForError(CKM_SHA256, kIncorrectSize, kPmsSize, 0);
  }
  
@@ -39,9 +39,9 @@ diff -up nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable_ems_gtests nss/gtest
 -}
 -
  }  // namespace nss_test
-diff -up nss/gtests/ssl_gtest/manifest.mn.disable_ems_gtests nss/gtests/ssl_gtest/manifest.mn
---- nss/gtests/ssl_gtest/manifest.mn.disable_ems_gtests	2017-01-16 10:20:33.838983251 +0100
-+++ nss/gtests/ssl_gtest/manifest.mn	2017-01-16 10:20:36.802895453 +0100
+diff -up nss/gtests/ssl_gtest/manifest.mn.disable-ems-gtests nss/gtests/ssl_gtest/manifest.mn
+--- nss/gtests/ssl_gtest/manifest.mn.disable-ems-gtests	2017-11-08 17:35:00.875061831 +0100
++++ nss/gtests/ssl_gtest/manifest.mn	2017-11-08 17:35:26.531480998 +0100
 @@ -21,7 +21,6 @@ CPPSRCS = \
        ssl_dhe_unittest.cc \
        ssl_drop_unittest.cc \
@@ -49,5 +49,4 @@ diff -up nss/gtests/ssl_gtest/manifest.mn.disable_ems_gtests nss/gtests/ssl_gtes
 -      ssl_ems_unittest.cc \
        ssl_exporter_unittest.cc \
        ssl_extension_unittest.cc \
-       ssl_fuzz_unittest.cc \
-diff -up nss/gtests/ssl_gtest/ssl_ems_unittest.cc.disable_ems_gtests nss/gtests/ssl_gtest/ssl_ems_unittest.cc
+       ssl_fragment_unittest.cc \

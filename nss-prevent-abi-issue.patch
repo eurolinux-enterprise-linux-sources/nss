@@ -1,19 +1,19 @@
 diff -up nss/lib/ssl/sslinfo.c.abi_lib nss/lib/ssl/sslinfo.c
---- nss/lib/ssl/sslinfo.c.abi_lib	2016-10-10 16:44:06.661038110 +0200
-+++ nss/lib/ssl/sslinfo.c	2016-10-10 16:44:54.436814398 +0200
-@@ -74,7 +74,7 @@ SSL_GetChannelInfo(PRFileDesc *fd, SSLCh
-             inf.creationTime = sid->creationTime;
-             inf.lastAccessTime = sid->lastAccessTime;
-             inf.expirationTime = sid->expirationTime;
+--- nss/lib/ssl/sslinfo.c.abi_lib	2018-02-28 12:40:49.615239758 +0100
++++ nss/lib/ssl/sslinfo.c	2018-02-28 12:41:27.039400614 +0100
+@@ -86,7 +86,7 @@ SSL_GetChannelInfo(PRFileDesc *fd, SSLCh
+             inf.creationTime = sid->creationTime / PR_USEC_PER_SEC;
+             inf.lastAccessTime = sid->lastAccessTime / PR_USEC_PER_SEC;
+             inf.expirationTime = sid->expirationTime / PR_USEC_PER_SEC;
 -            inf.extendedMasterSecretUsed =
 +            inf.reservedNotSupported =
                  (ss->version >= SSL_LIBRARY_VERSION_TLS_1_3 ||
                   sid->u.ssl3.keys.extendedMasterSecretUsed)
                      ? PR_TRUE
 diff -up nss/lib/ssl/sslt.h.abi_lib nss/lib/ssl/sslt.h
---- nss/lib/ssl/sslt.h.abi_lib	2016-10-03 16:55:58.000000000 +0200
-+++ nss/lib/ssl/sslt.h	2016-10-10 16:44:06.661038110 +0200
-@@ -188,7 +188,7 @@ typedef struct SSLChannelInfoStr {
+--- nss/lib/ssl/sslt.h.abi_lib	2018-02-27 15:47:47.000000000 +0100
++++ nss/lib/ssl/sslt.h	2018-02-28 12:40:49.615239758 +0100
+@@ -288,7 +288,7 @@ typedef struct SSLChannelInfoStr {
       * This field only has meaning in TLS < 1.3 and will be set to
       *  PR_FALSE in TLS 1.3.
       */

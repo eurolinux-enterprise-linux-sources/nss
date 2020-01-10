@@ -1,18 +1,18 @@
-diff -up nss/gtests/pk11_gtest/manifest.mn.disable-chacha20 nss/gtests/pk11_gtest/manifest.mn
---- nss/gtests/pk11_gtest/manifest.mn.disable-chacha20	2017-01-30 02:06:08.000000000 +0100
-+++ nss/gtests/pk11_gtest/manifest.mn	2017-02-17 11:40:26.749019359 +0100
+diff -up nss/gtests/pk11_gtest/manifest.mn.disable-chacha20-gtests nss/gtests/pk11_gtest/manifest.mn
+--- nss/gtests/pk11_gtest/manifest.mn.disable-chacha20-gtests	2018-02-28 12:43:52.338142632 +0100
++++ nss/gtests/pk11_gtest/manifest.mn	2018-02-28 12:46:56.515012905 +0100
 @@ -8,7 +8,6 @@ MODULE = nss
  
  CPPSRCS = \
        pk11_aeskeywrap_unittest.cc \
 -      pk11_chacha20poly1305_unittest.cc \
+       pk11_ecdsa_unittest.cc \
+       pk11_encrypt_derive_unittest.cc \
        pk11_export_unittest.cc \
-       pk11_pbkdf2_unittest.cc \
-       pk11_prf_unittest.cc \
-diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20 nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
---- nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20	2017-01-30 02:06:08.000000000 +0100
-+++ nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2017-02-17 11:40:26.749019359 +0100
-@@ -326,10 +326,7 @@ INSTANTIATE_CIPHER_TEST_P(AEAD, All, V12
+diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20-gtests nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20-gtests	2018-02-27 15:47:47.000000000 +0100
++++ nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2018-02-28 12:43:52.338142632 +0100
+@@ -340,10 +340,7 @@ INSTANTIATE_CIPHER_TEST_P(AEAD, All, V12
                            TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
                            TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
                            TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -24,7 +24,7 @@ diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20 nss/g
  INSTANTIATE_CIPHER_TEST_P(
      CBC12, All, V12, kDummyNamedGroupParams, kDummySignatureSchemesParams,
      TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, TLS_RSA_WITH_AES_256_CBC_SHA256,
-@@ -361,7 +358,7 @@ INSTANTIATE_CIPHER_TEST_P(
+@@ -375,7 +372,7 @@ INSTANTIATE_CIPHER_TEST_P(
  INSTANTIATE_CIPHER_TEST_P(TLS13, All, V13,
                            ::testing::ValuesIn(kFasterDHEGroups),
                            ::testing::ValuesIn(kSignatureSchemesParamsArr),
@@ -33,7 +33,7 @@ diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20 nss/g
                            TLS_AES_256_GCM_SHA384);
  INSTANTIATE_CIPHER_TEST_P(TLS13AllGroups, All, V13,
                            ::testing::ValuesIn(kAllDHEGroups),
-@@ -446,9 +443,7 @@ static const SecStatusParams kSecStatusT
+@@ -460,9 +457,7 @@ static const SecStatusParams kSecStatusT
      {SSL_LIBRARY_VERSION_TLS_1_2, TLS_RSA_WITH_AES_128_GCM_SHA256,
       "AES-128-GCM", 128},
      {SSL_LIBRARY_VERSION_TLS_1_2, TLS_RSA_WITH_AES_256_GCM_SHA384,
@@ -44,11 +44,11 @@ diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-chacha20 nss/g
  INSTANTIATE_TEST_CASE_P(TestSecurityStatus, SecurityStatusTest,
                          ::testing::ValuesIn(kSecStatusTestValuesArr));
  
-diff -up nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20 nss/gtests/ssl_gtest/ssl_drop_unittest.cc
---- nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20	2017-01-30 02:06:08.000000000 +0100
-+++ nss/gtests/ssl_gtest/ssl_drop_unittest.cc	2017-02-17 11:41:03.656247032 +0100
-@@ -65,69 +65,4 @@ TEST_P(TlsConnectDatagram, DropServerSec
-   Connect();
+diff -up nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20-gtests nss/gtests/ssl_gtest/ssl_drop_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20-gtests	2018-02-28 12:43:52.338142632 +0100
++++ nss/gtests/ssl_gtest/ssl_drop_unittest.cc	2018-02-28 12:48:56.970311986 +0100
+@@ -800,69 +800,6 @@ TEST_F(TlsReorderDatagram13, DataAfterFi
+   EXPECT_EQ(PR_WOULD_BLOCK_ERROR, PORT_GetError());
  }
  
 -static void GetCipherAndLimit(uint16_t version, uint16_t* cipher,
@@ -97,7 +97,6 @@ diff -up nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20 nss/gtests/s
 -  GetCipherAndLimit(version_, &cipher);
 -  server_->EnableSingleCipher(cipher);
 -  Connect();
--
 -  EXPECT_EQ(SECSuccess, SSLInt_AdvanceWriteSeqByAWindow(client_->ssl_fd(), 0));
 -  SendReceive();
 -}
@@ -115,11 +114,12 @@ diff -up nss/gtests/ssl_gtest/ssl_drop_unittest.cc.disable-chacha20 nss/gtests/s
 -
 -INSTANTIATE_TEST_CASE_P(Datagram12Plus, TlsConnectDatagram12Plus,
 -                        TlsConnectTestBase::kTlsV12Plus);
--
- }  // namespace nss_test
-diff -up nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-chacha20 nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc
---- nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-chacha20	2017-02-17 11:40:26.747019401 +0100
-+++ nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc	2017-02-17 11:40:26.749019359 +0100
+ INSTANTIATE_TEST_CASE_P(DatagramPre13, TlsConnectDatagramPre13,
+                         TlsConnectTestBase::kTlsV11V12);
+ 
+diff -up nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-chacha20-gtests nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-chacha20-gtests	2018-02-28 12:43:52.335142699 +0100
++++ nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc	2018-02-28 12:43:52.338142632 +0100
 @@ -50,17 +50,6 @@ TEST_P(TlsConnectGeneric, ConnectEcdhe)
    CheckKeys();
  }

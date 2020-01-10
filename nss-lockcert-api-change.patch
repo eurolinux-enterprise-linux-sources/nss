@@ -1,0 +1,68 @@
+# HG changeset patch
+# User Franziskus Kiefer <franziskuskiefer@gmail.com>
+# Date 1486546862 -3600
+#      Wed Feb 08 10:41:02 2017 +0100
+# Node ID 896e3eb3a79933a51886949c7adb67ef37b721c0
+# Parent  a8d77070526320ad0edc7ba164ce97f10c4f7d94
+Bug 1278965 - tsan race in CERTCertificate, r=wtc,ttaubert
+
+diff --git a/lib/certdb/cert.h b/lib/certdb/cert.h
+--- a/lib/certdb/cert.h
++++ b/lib/certdb/cert.h
+@@ -1405,24 +1405,11 @@ void CERT_SetStatusConfig(CERTCertDBHand
+ void CERT_LockCertRefCount(CERTCertificate *cert);
+ 
+ /*
+- * Free the cert reference count lock
++ * Release the cert reference count lock
+  */
+ void CERT_UnlockCertRefCount(CERTCertificate *cert);
+ 
+ /*
+- * Acquire the cert trust lock
+- * There is currently one global lock for all certs, but I'm putting a cert
+- * arg here so that it will be easy to make it per-cert in the future if
+- * that turns out to be necessary.
+- */
+-void CERT_LockCertTrust(const CERTCertificate *cert);
+-
+-/*
+- * Free the cert trust lock
+- */
+-void CERT_UnlockCertTrust(const CERTCertificate *cert);
+-
+-/*
+  * Digest the cert's subject public key using the specified algorithm.
+  * NOTE: this digests the value of the BIT STRING subjectPublicKey (excluding
+  * the tag, length, and number of unused bits) rather than the whole
+diff --git a/lib/certdb/certi.h b/lib/certdb/certi.h
+--- a/lib/certdb/certi.h
++++ b/lib/certdb/certi.h
+@@ -378,14 +378,27 @@ PRUint32 cert_CountDNSPatterns(CERTGener
+ SECStatus cert_CheckLeafTrust(CERTCertificate* cert, SECCertUsage usage,
+                               unsigned int* failedFlags, PRBool* isTrusted);
+ 
+ /*
+  * Acquire the cert temp/perm lock
+  */
+ void CERT_LockCertTempPerm(const CERTCertificate* cert);
+ 
+ /*
+  * Release the temp/perm lock
+  */
+ void CERT_UnlockCertTempPerm(const CERTCertificate* cert);
+ 
++/*
++ * Acquire the cert trust lock
++ * There is currently one global lock for all certs, but I'm putting a cert
++ * arg here so that it will be easy to make it per-cert in the future if
++ * that turns out to be necessary.
++ */
++void CERT_LockCertTrust(const CERTCertificate* cert);
++
++/*
++ * Release the cert trust lock
++ */
++void CERT_UnlockCertTrust(const CERTCertificate* cert);
++
+ #endif /* _CERTI_H_ */

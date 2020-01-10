@@ -1,0 +1,28 @@
+diff -up nss/tests/cert/cert.sh.disable-pss-tests nss/tests/cert/cert.sh
+--- nss/tests/cert/cert.sh.disable-pss-tests	2018-02-27 15:47:47.000000000 +0100
++++ nss/tests/cert/cert.sh	2018-02-28 12:54:09.753298899 +0100
+@@ -511,16 +511,6 @@ cert_all_CA()
+ #	in the chain
+ 
+ #
+-#       Create RSA-PSS version of TestCA
+-	ALL_CU_SUBJECT="CN=NSS Test CA (RSA-PSS), O=BOGUS NSS, L=Mountain View, ST=California, C=US"
+-	cert_rsa_pss_CA $CADIR TestCA-rsa-pss -x "CTu,CTu,CTu" ${D_CA} "1" SHA256
+-	rm $CADIR/rsapssroot.cert
+-
+-	ALL_CU_SUBJECT="CN=NSS Test CA (RSA-PSS-SHA1), O=BOGUS NSS, L=Mountain View, ST=California, C=US"
+-	cert_rsa_pss_CA $CADIR TestCA-rsa-pss-sha1 -x "CTu,CTu,CTu" ${D_CA} "1" SHA1
+-	rm $CADIR/rsapssroot.cert
+-
+-#
+ #       Create EC version of TestCA
+ 	CA_CURVE="secp521r1"
+ 	ALL_CU_SUBJECT="CN=NSS Test CA (ECC), O=BOGUS NSS, L=Mountain View, ST=California, C=US"
+@@ -2457,7 +2447,6 @@ cert_san_and_generic_extensions
+ cert_test_password
+ cert_test_distrust
+ cert_test_ocspresp
+-cert_test_rsapss
+ 
+ if [ -z "$NSS_TEST_DISABLE_CRL" ] ; then
+     cert_crl_ssl
