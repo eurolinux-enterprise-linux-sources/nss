@@ -1,0 +1,51 @@
+diff -up nss/tests/ssl/sslcov.txt.disable-unsupported-tests nss/tests/ssl/sslcov.txt
+--- nss/tests/ssl/sslcov.txt.disable-unsupported-tests	2017-02-28 16:32:52.512276170 +0100
++++ nss/tests/ssl/sslcov.txt	2017-02-28 16:35:21.004373468 +0100
+@@ -15,9 +15,9 @@
+   noECC  SSL3   v    SSL3_RSA_WITH_AES_128_CBC_SHA
+   noECC  SSL3   y    SSL3_RSA_WITH_AES_256_CBC_SHA
+   noECC  SSL3   z    SSL3_RSA_WITH_NULL_SHA
+-  noECC  TLS12 :009F  TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+-  noECC  TLS12 :00A3  TLS_DHE_DSS_WITH_AES_256_GCM_SHA384
+-  noECC  TLS12 :009D  TLS_RSA_WITH_AES_256_GCM_SHA384
++#  noECC  TLS12 :009F  TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
++#  noECC  TLS12 :00A3  TLS_DHE_DSS_WITH_AES_256_GCM_SHA384
++#  noECC  TLS12 :009D  TLS_RSA_WITH_AES_256_GCM_SHA384
+ #  noECC  SSL3  :0041 TLS_RSA_WITH_CAMELLIA_128_CBC_SHA
+ #  noECC  SSL3  :0084 TLS_RSA_WITH_CAMELLIA_256_CBC_SHA
+ #
+@@ -132,12 +132,12 @@
+    ECC   TLS12  :C013 TLS12_ECDHE_RSA_WITH_AES_128_CBC_SHA
+    ECC   TLS12  :C014 TLS12_ECDHE_RSA_WITH_AES_256_CBC_SHA
+    ECC   TLS12  :C023 TLS12_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+-   ECC   TLS12  :C024 TLS12_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
++#   ECC   TLS12  :C024 TLS12_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
+    ECC   TLS12  :C027 TLS12_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+-   ECC   TLS12  :C028 TLS12_ECDHE_RSA_WITH_AES_256_CBC_SHA384
++#   ECC   TLS12  :C028 TLS12_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+    ECC   TLS12  :C02B TLS12_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+-   ECC   TLS12  :C02C TLS12_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
++#   ECC   TLS12  :C02C TLS12_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+    ECC   TLS12  :C02F TLS12_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+-   ECC   TLS12  :C030 TLS12_ECDHE_RSA_WITH_AES_256_GCM_SHA384
++#   ECC   TLS12  :C030 TLS12_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+ #   ECC   TLS12  :CCA8 TLS12_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+ #   ECC   TLS12  :CCA9 TLS12_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+diff -up nss/tests/ssl/sslstress.txt.disable-unsupported-tests nss/tests/ssl/sslstress.txt
+--- nss/tests/ssl/sslstress.txt.disable-unsupported-tests	2017-02-17 14:20:06.000000000 +0100
++++ nss/tests/ssl/sslstress.txt	2017-02-28 16:32:52.516276065 +0100
+@@ -73,7 +73,7 @@
+ 
+    noECC    0      -c_:006B  -V_ssl3:tls1.2_-c_100_-C_:006B_-N  Stress TLS DHE_RSA_WITH_AES_256_CBC_SHA256 (no reuse)
+    noECC    0      -c_:009E  -V_ssl3:tls1.2_-c_100_-C_:009E_-N  Stress TLS DHE_RSA_WITH_AES_128_GCM_SHA256 (no reuse)
+-   noECC    0      -c_:009F  -V_ssl3:tls1.2_-c_100_-C_:009F_-N  Stress TLS DHE_RSA_WITH_AES_256_GCM_SHA384 (no reuse)
++#   noECC    0      -c_:009F  -V_ssl3:tls1.2_-c_100_-C_:009F_-N  Stress TLS DHE_RSA_WITH_AES_256_GCM_SHA384 (no reuse)
+ #
+ # add client auth versions here...
+ #
+@@ -84,4 +84,4 @@
+ #  noECC    0   -r_-r_-c_:00A3_-u  -V_ssl3:tls1.2_-c_1000_-C_:00A3_-n_TestUser-dsa_-u       Stress TLS DHE_DSS_WITH_AES_256_GCM_SHA384 (session ticket, client auth)
+ # use the above session ticket test, once session tickets with DHE_DSS are working
+    noECC    0   -r_-r_-c_:00A2_-u  -V_ssl3:tls1.2_-c_1000_-C_:00A2_-N_-n_TestUser-dsa    Stress TLS DHE_DSS_WITH_AES_128_GCM_SHA256 (no reuse, client auth)
+-   noECC    0   -r_-r_-c_:00A3_-u  -V_ssl3:tls1.2_-c_1000_-C_:00A3_-N_-n_TestUser-dsa    Stress TLS DHE_DSS_WITH_AES_256_GCM_SHA384 (no reuse, client auth)
++#   noECC    0   -r_-r_-c_:00A3_-u  -V_ssl3:tls1.2_-c_1000_-C_:00A3_-N_-n_TestUser-dsa    Stress TLS DHE_DSS_WITH_AES_256_GCM_SHA384 (no reuse, client auth)

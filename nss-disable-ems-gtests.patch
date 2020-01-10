@@ -1,0 +1,53 @@
+diff -up nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable_ems_gtests nss/gtests/pk11_gtest/pk11_prf_unittest.cc
+--- nss/gtests/pk11_gtest/pk11_prf_unittest.cc.disable_ems_gtests	2017-01-16 10:19:10.073459080 +0100
++++ nss/gtests/pk11_gtest/pk11_prf_unittest.cc	2017-01-16 10:21:40.408011066 +0100
+@@ -193,37 +193,4 @@ TEST_F(TlsPrfTest, ExtendedMsParamErr) {
+   CheckForError(CKM_SHA256, kIncorrectSize, kPmsSize, 0);
+ }
+ 
+-// Test matrix:
+-//
+-//            DH  RSA
+-//  TLS_PRF   1   2
+-//  SHA256    3   4
+-TEST_F(TlsPrfTest, ExtendedMsDhTlsPrf) {
+-  Init();
+-  ComputeAndVerifyMs(CKM_NSS_TLS_EXTENDED_MASTER_KEY_DERIVE_DH, CKM_TLS_PRF,
+-                     nullptr, kExpectedOutputEmsTlsPrf);
+-}
+-
+-TEST_F(TlsPrfTest, ExtendedMsRsaTlsPrf) {
+-  Init();
+-  ComputeAndVerifyMs(CKM_NSS_TLS_EXTENDED_MASTER_KEY_DERIVE, CKM_TLS_PRF,
+-                     &pms_version_, kExpectedOutputEmsTlsPrf);
+-  EXPECT_EQ(0, pms_version_.major);
+-  EXPECT_EQ(1, pms_version_.minor);
+-}
+-
+-TEST_F(TlsPrfTest, ExtendedMsDhSha256) {
+-  Init();
+-  ComputeAndVerifyMs(CKM_NSS_TLS_EXTENDED_MASTER_KEY_DERIVE_DH, CKM_SHA256,
+-                     nullptr, kExpectedOutputEmsSha256);
+-}
+-
+-TEST_F(TlsPrfTest, ExtendedMsRsaSha256) {
+-  Init();
+-  ComputeAndVerifyMs(CKM_NSS_TLS_EXTENDED_MASTER_KEY_DERIVE, CKM_SHA256,
+-                     &pms_version_, kExpectedOutputEmsSha256);
+-  EXPECT_EQ(0, pms_version_.major);
+-  EXPECT_EQ(1, pms_version_.minor);
+-}
+-
+ }  // namespace nss_test
+diff -up nss/gtests/ssl_gtest/manifest.mn.disable_ems_gtests nss/gtests/ssl_gtest/manifest.mn
+--- nss/gtests/ssl_gtest/manifest.mn.disable_ems_gtests	2017-01-16 10:20:33.838983251 +0100
++++ nss/gtests/ssl_gtest/manifest.mn	2017-01-16 10:20:36.802895453 +0100
+@@ -21,7 +21,6 @@ CPPSRCS = \
+       ssl_dhe_unittest.cc \
+       ssl_drop_unittest.cc \
+       ssl_ecdh_unittest.cc \
+-      ssl_ems_unittest.cc \
+       ssl_exporter_unittest.cc \
+       ssl_extension_unittest.cc \
+       ssl_fuzz_unittest.cc \
+diff -up nss/gtests/ssl_gtest/ssl_ems_unittest.cc.disable_ems_gtests nss/gtests/ssl_gtest/ssl_ems_unittest.cc

@@ -1,0 +1,24 @@
+diff -up nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-curve25519 nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc.disable-curve25519	2017-02-17 11:35:40.794056778 +0100
++++ nss/gtests/ssl_gtest/ssl_ecdh_unittest.cc	2017-02-17 11:35:50.905842897 +0100
+@@ -287,20 +287,6 @@ TEST_P(TlsConnectStreamPre13, Configured
+             ssl_sig_rsa_pss_sha256);
+ }
+ 
+-TEST_P(TlsKeyExchangeTest, Curve25519) {
+-  Reset(TlsAgent::kServerEcdsa256);
+-  const std::vector<SSLNamedGroup> groups = {
+-      ssl_grp_ec_curve25519, ssl_grp_ec_secp256r1, ssl_grp_ec_secp521r1};
+-  EnsureKeyShareSetup();
+-  ConfigNamedGroups(groups);
+-  Connect();
+-
+-  CheckKeys(ssl_kea_ecdh, ssl_grp_ec_curve25519, ssl_auth_ecdsa,
+-            ssl_sig_ecdsa_secp256r1_sha256);
+-  const std::vector<SSLNamedGroup> shares = {ssl_grp_ec_curve25519};
+-  CheckKEXDetails(groups, shares);
+-}
+-
+ TEST_P(TlsConnectGenericPre13, GroupPreferenceServerPriority) {
+   EnsureTlsSetup();
+   client_->DisableAllCiphers();

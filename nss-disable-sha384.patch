@@ -1,0 +1,18 @@
+diff -up nss/lib/ssl/ssl3con.c.disable_sha384 nss/lib/ssl/ssl3con.c
+--- nss/lib/ssl/ssl3con.c.disable_sha384	2016-11-21 13:20:57.835506210 +0100
++++ nss/lib/ssl/ssl3con.c	2016-11-21 15:53:11.421220262 +0100
+@@ -1013,6 +1013,14 @@ ssl3_config_match_init(sslSocket *ss)
+                 suite->isPresent = PR_FALSE;
+             }
+ 
++            /* The ciphersuites based on SHA384 are not usable with
++             * old softoken in RHEL-6.
++             */
++            if (cipher_def->prf_hash == ssl_hash_sha384 &&
++                !PK11_TokenExists(CKM_TLS12_KEY_AND_MAC_DERIVE)) {
++                suite->isPresent = PR_FALSE;
++            }
++
+             if (suite->isPresent) {
+                 ++numPresent;
+             }

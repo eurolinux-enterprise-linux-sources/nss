@@ -1,0 +1,12 @@
+diff -up nss/lib/ssl/sslsock.c.transitional nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.transitional	2016-08-15 17:57:58.146879056 +0200
++++ nss/lib/ssl/sslsock.c	2016-08-15 17:58:02.365758224 +0200
+@@ -72,7 +72,7 @@ static sslOptions ssl_defaults = {
+     PR_FALSE,              /* noLocks            */
+     PR_FALSE,              /* enableSessionTickets */
+     PR_FALSE,              /* enableDeflate      */
+-    2,                     /* enableRenegotiation (default: requires extension) */
++    3,                     /* enableRenegotiation (default: transitional) */
+     PR_FALSE,              /* requireSafeNegotiation */
+     PR_FALSE,              /* enableFalseStart   */
+     PR_TRUE,               /* cbcRandomIV        */

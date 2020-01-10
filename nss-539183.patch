@@ -1,0 +1,44 @@
+diff -up nss/cmd/httpserv/httpserv.c.539183 nss/cmd/httpserv/httpserv.c
+--- nss/cmd/httpserv/httpserv.c.539183	2016-08-15 17:58:41.756630037 +0200
++++ nss/cmd/httpserv/httpserv.c	2016-08-15 18:04:13.559131620 +0200
+@@ -976,13 +976,13 @@ getBoundListenSocket(unsigned short port
+     PRNetAddr addr;
+     PRSocketOptionData opt;
+ 
+-    addr.inet.family = PR_AF_INET;
+-    addr.inet.ip = PR_INADDR_ANY;
+-    addr.inet.port = PR_htons(port);
++    if (PR_SetNetAddr(PR_IpAddrAny, PR_AF_INET6, port, &addr) != PR_SUCCESS) {
++	errExit("PR_SetNetAddr");
++    }
+ 
+-    listen_sock = PR_NewTCPSocket();
++    listen_sock = PR_OpenTCPSocket(PR_AF_INET6);
+     if (listen_sock == NULL) {
+-        errExit("PR_NewTCPSocket");
++	errExit("PR_OpenTCPSocket error");
+     }
+ 
+     opt.option = PR_SockOpt_Nonblocking;
+diff -up nss/cmd/selfserv/selfserv.c.539183 nss/cmd/selfserv/selfserv.c
+--- nss/cmd/selfserv/selfserv.c.539183	2016-08-15 17:58:41.756630037 +0200
++++ nss/cmd/selfserv/selfserv.c	2016-08-15 18:05:11.027487891 +0200
+@@ -1731,13 +1731,13 @@ getBoundListenSocket(unsigned short port
+     PRNetAddr addr;
+     PRSocketOptionData opt;
+ 
+-    addr.inet.family = PR_AF_INET;
+-    addr.inet.ip = PR_INADDR_ANY;
+-    addr.inet.port = PR_htons(port);
++    if (PR_SetNetAddr(PR_IpAddrAny, PR_AF_INET6, port, &addr) != PR_SUCCESS) {
++	errExit("PR_SetNetAddr");
++    }
+ 
+-    listen_sock = PR_NewTCPSocket();
++    listen_sock = PR_OpenTCPSocket(PR_AF_INET6);
+     if (listen_sock == NULL) {
+-        errExit("PR_NewTCPSocket");
++        errExit("PR_OpenTCPSocket error");
+     }
+ 
+     opt.option = PR_SockOpt_Nonblocking;

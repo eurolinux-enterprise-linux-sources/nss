@@ -1,0 +1,51 @@
+diff -up nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtests nss/gtests/pk11_gtest/pk11_export_unittest.cc
+--- nss/gtests/pk11_gtest/pk11_export_unittest.cc.disable-unsupported-gtests	2017-02-17 14:20:06.000000000 +0100
++++ nss/gtests/pk11_gtest/pk11_export_unittest.cc	2017-03-27 10:35:56.137428079 +0200
+@@ -61,6 +61,4 @@ class Pkcs11ExportTest : public ::testin
+ 
+ TEST_F(Pkcs11ExportTest, DeriveNonExport) { Derive(false); }
+ 
+-TEST_F(Pkcs11ExportTest, DeriveExport) { Derive(true); }
+-
+ }  // namespace nss_test
+diff -up nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtests nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc
+--- nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc.disable-unsupported-gtests	2017-02-17 14:20:06.000000000 +0100
++++ nss/gtests/pk11_gtest/pk11_pbkdf2_unittest.cc	2017-03-27 10:35:56.137428079 +0200
+@@ -72,25 +72,4 @@ class Pkcs11Pbkdf2Test : public ::testin
+   }
+ };
+ 
+-// RFC 6070 <http://tools.ietf.org/html/rfc6070>
+-TEST_F(Pkcs11Pbkdf2Test, DeriveKnown1) {
+-  std::vector<uint8_t> derived = {0x3d, 0x2e, 0xec, 0x4f, 0xe4, 0x1c, 0x84,
+-                                  0x9b, 0x80, 0xc8, 0xd8, 0x36, 0x62, 0xc0,
+-                                  0xe4, 0x4a, 0x8b, 0x29, 0x1a, 0x96, 0x4c,
+-                                  0xf2, 0xf0, 0x70, 0x38};
+-
+-  Derive(derived, SEC_OID_HMAC_SHA1);
+-}
+-
+-// https://stackoverflow.com/questions/5130513/pbkdf2-hmac-sha2-test-vectors
+-TEST_F(Pkcs11Pbkdf2Test, DeriveKnown2) {
+-  std::vector<uint8_t> derived = {
+-      0x34, 0x8c, 0x89, 0xdb, 0xcb, 0xd3, 0x2b, 0x2f, 0x32, 0xd8,
+-      0x14, 0xb8, 0x11, 0x6e, 0x84, 0xcf, 0x2b, 0x17, 0x34, 0x7e,
+-      0xbc, 0x18, 0x00, 0x18, 0x1c, 0x4e, 0x2a, 0x1f, 0xb8, 0xdd,
+-      0x53, 0xe1, 0xc6, 0x35, 0x51, 0x8c, 0x7d, 0xac, 0x47, 0xe9};
+-
+-  Derive(derived, SEC_OID_HMAC_SHA256);
+-}
+-
+ }  // namespace nss_test
+diff -up nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gtests nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc.disable-unsupported-gtests	2017-03-27 10:36:52.458275412 +0200
++++ nss/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc	2017-03-27 10:37:18.319745407 +0200
+@@ -335,7 +335,7 @@ INSTANTIATE_CIPHER_TEST_P(
+     TLS_RSA_WITH_AES_128_CBC_SHA256, TLS_DHE_DSS_WITH_AES_128_CBC_SHA256,
+     TLS_DHE_DSS_WITH_AES_256_CBC_SHA256);
+ INSTANTIATE_CIPHER_TEST_P(
+-    CBCStream, Stream, V10ToV12, kDummyNamedGroupParams,
++    CBCStream, Stream, V11V12, kDummyNamedGroupParams,
+     kDummySignatureSchemesParams, TLS_ECDH_ECDSA_WITH_NULL_SHA,
+     TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA, TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
+     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA, TLS_ECDHE_ECDSA_WITH_NULL_SHA,

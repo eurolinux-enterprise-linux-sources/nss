@@ -1,0 +1,41 @@
+diff -up nss/lib/cryptohi/secsign.c.keep_sha1_default nss/lib/cryptohi/secsign.c
+--- nss/lib/cryptohi/secsign.c.keep_sha1_default	2016-08-05 17:43:39.000000000 +0200
++++ nss/lib/cryptohi/secsign.c	2016-08-17 14:55:50.766045118 +0200
+@@ -446,13 +446,13 @@ SEC_GetSignatureAlgorithmOidTag(KeyType
+                 case SEC_OID_MD5:
+                     sigTag = SEC_OID_PKCS1_MD5_WITH_RSA_ENCRYPTION;
+                     break;
++                case SEC_OID_UNKNOWN: /* default for RSA if not specified */
+                 case SEC_OID_SHA1:
+                     sigTag = SEC_OID_PKCS1_SHA1_WITH_RSA_ENCRYPTION;
+                     break;
+                 case SEC_OID_SHA224:
+                     sigTag = SEC_OID_PKCS1_SHA224_WITH_RSA_ENCRYPTION;
+                     break;
+-                case SEC_OID_UNKNOWN: /* default for RSA if not specified */
+                 case SEC_OID_SHA256:
+                     sigTag = SEC_OID_PKCS1_SHA256_WITH_RSA_ENCRYPTION;
+                     break;
+diff -up nss/tests/ssl/sslpolicy.txt.keep_sha1_default nss/tests/ssl/sslpolicy.txt
+--- nss/tests/ssl/sslpolicy.txt.keep_sha1_default	2016-08-17 14:56:32.650088982 +0200
++++ nss/tests/ssl/sslpolicy.txt	2016-08-17 16:17:03.733193982 +0200
+@@ -148,14 +148,14 @@
+ # Exp Enable Enable Cipher Config Policy      Test Name
+ # Ret  EC     TLS
+ # turn on single cipher 
+-  0 noECC  SSL3   d    disallow=all_allow=hmac-sha1:sha256:rsa:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Allowed by Narrow Policy
+-  0 noECC  SSL3   d    disallow=all_allow=hmac-sha1/ssl,ssl-key-exchange:sha256/cert-signature:rsa/ssl-key-exchange:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Allowed by Strict Policy
++  0 noECC  SSL3   d    disallow=all_allow=hmac-sha1:sha1:rsa:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Allowed by Narrow Policy
++  0 noECC  SSL3   d    disallow=all_allow=hmac-sha1/ssl,ssl-key-exchange:sha1/cert-signature:rsa/ssl-key-exchange:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Allowed by Strict Policy
+   0 noECC  SSL3   d    disallow=all_allow=md2/all:md4/all:md5/all:sha1/all:sha256/all:sha384/all:sha512/all:hmac-sha1/all:hmac-sha224/all:hmac-sha256/all:hmac-sha384/all:hmac-sha512/all:hmac-md5/all:camellia128-cbc/all:camellia192-cbc/all:camellia256-cbc/all:seed-cbc/all:des-ede3-cbc/all:des-40-cbc/all:des-cbc/all:null-cipher/all:rc2/all:rc4/all:idea/all:rsa/all:rsa-export/all:dhe-rsa/all:dhe-dss/all:ecdhe-ecdsa/all:ecdhe-rsa/all:ecdh-ecdsa/all:ecdh-rsa/all:tls-version-min=ssl2.0:tls-version-max=tls1.2 Allow All Explicitly
+   1 noECC  SSL3   d    disallow=all Disallow All Explicitly.
+ # turn off signature only
+-  1 noECC  SSL3   d    disallow=sha256 Disallow SHA256 Signatures Explicitly.
+-  1 noECC  SSL3   d    disallow=all_allow=hmac-sha1:rsa/ssl-key-exchange:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Disallow SHA256 Signatures Implicitly Narrow.
+-  1 noECC  SSL3   d    disallow=all_allow=md2/all:md4/all:md5/all:sha1/all:sha384/all:sha512/all:hmac-sha1/all:hmac-sha224/all:hmac-sha256/all:hmac-sha384/all:hmac-sha512/all:hmac-md5/all:camellia128-cbc/all:camellia192-cbc/all:camellia256-cbc/all:seed-cbc/all:des-ede3-cbc/all:des-40-cbc/all:des-cbc/all:null-cipher/all:rc2/all:rc4/all:idea/all:rsa/all:rsa-export/all:dhe-rsa/all:dhe-dss/all:ecdhe-ecdsa/all:ecdhe-rsa/all:ecdh-ecdsa/all:ecdh-rsa/all:tls-version-min=ssl2.0:tls-version-max=tls1.2 Disallow SHA256 Signatures Implicitly.
++  1 noECC  SSL3   d    disallow=sha1 Disallow SHA1 Signatures Explicitly.
++  1 noECC  SSL3   d    disallow=all_allow=hmac-sha256:rsa/ssl-key-exchange:des-ede3-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Disallow SHA1 Signatures Implicitly Narrow.
++  1 noECC  SSL3   d    disallow=all_allow=md2/all:md4/all:md5/all:sha256/all:sha384/all:sha512/all:hmac-sha1/all:hmac-sha224/all:hmac-sha256/all:hmac-sha384/all:hmac-sha512/all:hmac-md5/all:camellia128-cbc/all:camellia192-cbc/all:camellia256-cbc/all:seed-cbc/all:des-ede3-cbc/all:des-40-cbc/all:des-cbc/all:null-cipher/all:rc2/all:rc4/all:idea/all:rsa/all:rsa-export/all:dhe-rsa/all:dhe-dss/all:ecdhe-ecdsa/all:ecdhe-rsa/all:ecdh-ecdsa/all:ecdh-rsa/all:tls-version-min=ssl2.0:tls-version-max=tls1.2 Disallow SHA1 Signatures Implicitly.
+ # turn off single cipher 
+   1 noECC  SSL3   d    disallow=des-ede3-cbc Disallow Cipher Explicitly
+   1 noECC  SSL3   d    disallow=all_allow=hmac-sha1:sha256:rsa:des-cbc:tls-version-min=ssl3.0:tls-version-max=ssl3.0 Disallow Cipher Implicitly Narrow.

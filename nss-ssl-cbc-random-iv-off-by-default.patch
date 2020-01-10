@@ -1,0 +1,25 @@
+diff -up nss/lib/ssl/sslsock.c.cbcrandomivoff nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.cbcrandomivoff	2016-08-17 14:53:44.387930101 +0200
++++ nss/lib/ssl/sslsock.c	2016-08-17 14:55:15.761844201 +0200
+@@ -75,7 +75,7 @@ static sslOptions ssl_defaults = {
+     3,                     /* enableRenegotiation (default: transitional) */
+     PR_FALSE,              /* requireSafeNegotiation */
+     PR_FALSE,              /* enableFalseStart   */
+-    PR_TRUE,               /* cbcRandomIV        */
++    PR_FALSE,              /* cbcRandomIV        */ /* defaults to off for compatibility */
+     PR_FALSE,              /* enableOCSPStapling */
+     PR_FALSE,              /* enableNPN          */
+     PR_TRUE,               /* enableALPN         */
+@@ -3518,9 +3518,9 @@ ssl_SetDefaultsFromEnvironment(void)
+                        PR_TRUE));
+         }
+         ev = PR_GetEnvSecure("NSS_SSL_CBC_RANDOM_IV");
+-        if (ev && ev[0] == '0') {
+-            ssl_defaults.cbcRandomIV = PR_FALSE;
+-            SSL_TRACE(("SSL: cbcRandomIV set to 0"));
++        if (ev && ev[0] == '1') {
++            ssl_defaults.cbcRandomIV = PR_TRUE;
++            SSL_TRACE(("SSL: cbcRandomIV set to 1"));
+         }
+     }
+ #endif /* NSS_HAVE_GETENV */

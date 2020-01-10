@@ -1,0 +1,72 @@
+diff -up nss/lib/ssl/ssl3con.c.disable_pss nss/lib/ssl/ssl3con.c
+--- nss/lib/ssl/ssl3con.c.disable_pss	2017-02-17 11:44:34.969825045 +0100
++++ nss/lib/ssl/ssl3con.c	2017-02-17 11:44:34.973824961 +0100
+@@ -177,9 +177,15 @@ static const SSLSignatureScheme defaultS
+     ssl_sig_ecdsa_secp384r1_sha384,
+     ssl_sig_ecdsa_secp521r1_sha512,
+     ssl_sig_ecdsa_sha1,
++#if 0
++    /* Disable, while we are waiting for an upstream fix to
++     * https://bugzilla.mozilla.org/show_bug.cgi?id=1311950
++     * (NSS does not check if token supports RSA-PSS before using it to sign)
++     **/
+     ssl_sig_rsa_pss_sha256,
+     ssl_sig_rsa_pss_sha384,
+     ssl_sig_rsa_pss_sha512,
++#endif
+     ssl_sig_rsa_pkcs1_sha256,
+     ssl_sig_rsa_pkcs1_sha384,
+     ssl_sig_rsa_pkcs1_sha512,
+@@ -4622,9 +4628,16 @@ ssl_IsSupportedSignatureScheme(SSLSignat
+         case ssl_sig_rsa_pkcs1_sha256:
+         case ssl_sig_rsa_pkcs1_sha384:
+         case ssl_sig_rsa_pkcs1_sha512:
++            return PR_TRUE;
++    /* Disable, while we are waiting for an upstream fix to
++     * https://bugzilla.mozilla.org/show_bug.cgi?id=1311950
++     * (NSS does not check if token supports RSA-PSS before using it to sign)
++     **/
+         case ssl_sig_rsa_pss_sha256:
+         case ssl_sig_rsa_pss_sha384:
+         case ssl_sig_rsa_pss_sha512:
++            return PR_FALSE;
++
+         case ssl_sig_ecdsa_secp256r1_sha256:
+         case ssl_sig_ecdsa_secp384r1_sha384:
+         case ssl_sig_ecdsa_secp521r1_sha512:
+diff -up nss/lib/ssl/sslcert.c.disable_pss nss/lib/ssl/sslcert.c
+--- nss/lib/ssl/sslcert.c.disable_pss	2017-01-30 02:06:08.000000000 +0100
++++ nss/lib/ssl/sslcert.c	2017-02-17 11:44:34.973824961 +0100
+@@ -399,7 +399,13 @@ ssl_ConfigRsaPkcs1CertByUsage(sslSocket
+     PRBool ku_enc = (PRBool)(cert->keyUsage & KU_KEY_ENCIPHERMENT);
+ 
+     if ((data->authType == ssl_auth_rsa_sign && ku_sig) ||
++#if 0
++    /* Disable, while we are waiting for an upstream fix to
++     * https://bugzilla.mozilla.org/show_bug.cgi?id=1311950
++     * (NSS does not check if token supports RSA-PSS before using it to sign)
++     **/
+         (data->authType == ssl_auth_rsa_pss && ku_sig) ||
++#endif
+         (data->authType == ssl_auth_rsa_decrypt && ku_enc)) {
+         return ssl_ConfigCert(ss, cert, keyPair, data);
+     }
+@@ -416,12 +422,18 @@ ssl_ConfigRsaPkcs1CertByUsage(sslSocket
+             return rv;
+         }
+ 
++#if 0
++    /* Disable, while we are waiting for an upstream fix to
++     * https://bugzilla.mozilla.org/show_bug.cgi?id=1311950
++     * (NSS does not check if token supports RSA-PSS before using it to sign)
++     **/
+         /* This certificate is RSA, assume that it's also PSS. */
+         data->authType = ssl_auth_rsa_pss;
+         rv = ssl_ConfigCert(ss, cert, keyPair, data);
+         if (rv != SECSuccess) {
+             return rv;
+         }
++#endif
+     }
+ 
+     if (ku_enc) {

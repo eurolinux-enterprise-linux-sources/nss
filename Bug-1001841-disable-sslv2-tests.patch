@@ -1,0 +1,65 @@
+diff -up tests/ssl/ssl.sh.disableSSL2tests tests/ssl/ssl.sh
+--- tests/ssl/ssl.sh.disableSSL2tests	2017-02-17 14:20:06.000000000 +0100
++++ tests/ssl/ssl.sh	2017-02-28 10:34:56.708788262 +0100
+@@ -63,8 +63,14 @@ ssl_init()
+ 
+   # Test case files
+   SSLCOV=${QADIR}/ssl/sslcov.txt
++  if [ "${NSS_NO_SSL2}" = "1" ]; then
++    SSLCOV=${QADIR}/ssl/sslcov.noSSL2orExport.txt
++    SSLSTRESS=${QADIR}/ssl/sslstress.noSSL2orExport.txt
++  else
++    SSLCOV=${QADIR}/ssl/sslcov.txt
++    SSLSTRESS=${QADIR}/ssl/sslstress.txt
++  fi
+   SSLAUTH=${QADIR}/ssl/sslauth.txt
+-  SSLSTRESS=${QADIR}/ssl/sslstress.txt
+   SSLPOLICY=${QADIR}/ssl/sslpolicy.txt
+   REQUEST_FILE=${QADIR}/ssl/sslreq.dat
+ 
+@@ -129,7 +135,11 @@ is_selfserv_alive()
+   fi
+ 
+   echo "kill -0 ${PID} >/dev/null 2>/dev/null"
++  if [ "${NSS_NO_SSL2}" = "1" ] && [[ ${EXP} -eq 0 || ${SSL2} -eq 0 ]]; then
++  echo "No server to kill"
++  else
+   kill -0 ${PID} >/dev/null 2>/dev/null || Exit 10 "Fatal - selfserv process not detectable"
++  fi
+ 
+   echo "selfserv with PID ${PID} found at `date`"
+ }
+@@ -153,7 +163,11 @@ wait_for_selfserv()
+       ${BINDIR}/tstclnt -p ${PORT} -h ${HOSTADDR} ${CLIENT_OPTIONS} -q \
+               -d ${P_R_CLIENTDIR} $verbose < ${REQUEST_FILE}
+       if [ $? -ne 0 ]; then
++          if [ "${NSS_NO_SSL2}" = "1" ] && [[ ${EXP} -eq 0 || ${SSL2} -eq 0 ]]; then
++              html_passed "Server never started"
++          else
+           html_failed "Waiting for Server"
++          fi
+       fi
+   fi
+   is_selfserv_alive
+@@ -272,7 +286,7 @@ ssl_cov()
+   start_selfserv # Launch the server
+ 
+   VMIN="ssl3"
+-  VMAX="tls1.1"
++  VMAX="tls1.2"
+ 
+   exec < ${SSLCOV}
+   while read ectype testmax param testname
+@@ -280,6 +294,12 @@ ssl_cov()
+       echo "${testname}" | grep "EXPORT" > /dev/null
+       EXP=$?
+ 
++      #  skip export tests
++      if [ ${EXP} -eq 0 ]; then
++         echo "export test skipped"
++         continue
++      fi
++
+       if [ "$ectype" = "ECC" -a -n "$NSS_DISABLE_ECC" ] ; then
+           echo "$SCRIPTNAME: skipping  $testname (ECC only)"
+       elif [ "`echo $ectype | cut -b 1`" != "#" ] ; then

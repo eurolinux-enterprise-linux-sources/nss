@@ -1,0 +1,146 @@
+diff -up nss/cmd/chktest/chktest.c.uint32 nss/cmd/chktest/chktest.c
+--- nss/cmd/chktest/chktest.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/cmd/chktest/chktest.c	2017-03-27 09:55:15.512498189 +0200
+@@ -5,6 +5,10 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ #include "secutil.h"
+ 
+diff -up nss/cmd/pk11ectest/pk11ectest.c.uint32 nss/cmd/pk11ectest/pk11ectest.c
+--- nss/cmd/pk11ectest/pk11ectest.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/cmd/pk11ectest/pk11ectest.c	2017-03-27 09:55:15.512498189 +0200
+@@ -2,6 +2,10 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ #include "nss.h"
+ #include "secutil.h"
+diff -up nss/cmd/rsaperf/rsaperf.c.uint32 nss/cmd/rsaperf/rsaperf.c
+--- nss/cmd/rsaperf/rsaperf.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/cmd/rsaperf/rsaperf.c	2017-03-27 09:55:15.513498168 +0200
+@@ -7,6 +7,11 @@
+ #include "secutil.h"
+ #include "nspr.h"
+ #include "nss.h"
++
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ #include "plgetopt.h"
+ #include "lowkeyi.h"
+diff -up nss/cmd/signtool/certgen.c.uint32 nss/cmd/signtool/certgen.c
+--- nss/cmd/signtool/certgen.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/cmd/signtool/certgen.c	2017-03-27 09:55:15.513498168 +0200
+@@ -2,6 +2,10 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "signtool.h"
+ 
+ #include "secoid.h"
+diff -up nss/cmd/signtool/sign.c.uint32 nss/cmd/signtool/sign.c
+--- nss/cmd/signtool/sign.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/cmd/signtool/sign.c	2017-03-27 09:55:15.513498168 +0200
+@@ -2,6 +2,10 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "signtool.h"
+ #include "zip.h"
+ #include "prmem.h"
+diff -up nss/gtests/pk11_gtest/pk11_prng_unittest.cc.uint32 nss/gtests/pk11_gtest/pk11_prng_unittest.cc
+--- nss/gtests/pk11_gtest/pk11_prng_unittest.cc.uint32	2017-03-27 09:55:32.429152769 +0200
++++ nss/gtests/pk11_gtest/pk11_prng_unittest.cc	2017-03-27 09:55:46.699861376 +0200
+@@ -5,6 +5,11 @@
+  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ #include <memory>
++
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ #include "pk11pub.h"
+ 
+diff -up nss/gtests/ssl_gtest/ssl_fuzz_unittest.cc.uint32 nss/gtests/ssl_gtest/ssl_fuzz_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_fuzz_unittest.cc.uint32	2017-03-27 09:55:58.876612736 +0200
++++ nss/gtests/ssl_gtest/ssl_fuzz_unittest.cc	2017-03-27 09:56:55.860449196 +0200
+@@ -2,6 +2,10 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ #include "ssl.h"
+ #include "sslimpl.h"
+diff -up nss/lib/ckfw/pem/ckpem.h.uint32 nss/lib/ckfw/pem/ckpem.h
+--- nss/lib/ckfw/pem/ckpem.h.uint32	2017-03-27 09:55:15.508498270 +0200
++++ nss/lib/ckfw/pem/ckpem.h	2017-03-27 09:55:15.513498168 +0200
+@@ -9,6 +9,11 @@
+ #include "secoid.h"
+ #include "secasn1.h"
+ #include "blapit.h"
++
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "softoken.h"
+ 
+ /*
+diff -up nss/lib/cryptohi/sechash.c.uint32 nss/lib/cryptohi/sechash.c
+--- nss/lib/cryptohi/sechash.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/lib/cryptohi/sechash.c	2017-03-27 09:55:15.513498168 +0200
+@@ -1,6 +1,11 @@
+ /* This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "sechash.h"
+ #include "secoidt.h"
+ #include "secerr.h"
+diff -up nss/lib/ssl/ssl3con.c.uint32 nss/lib/ssl/ssl3con.c
+--- nss/lib/ssl/ssl3con.c.uint32	2017-02-17 14:20:06.000000000 +0100
++++ nss/lib/ssl/ssl3con.c	2017-03-27 09:55:15.515498127 +0200
+@@ -31,6 +31,12 @@
+ 
+ #include "pk11func.h"
+ #include "secmod.h"
++
++
++#ifndef uint32
++#define uint32 PRUint32
++#endif
++
+ #include "blapi.h"
+ 
+ #include <stdio.h>

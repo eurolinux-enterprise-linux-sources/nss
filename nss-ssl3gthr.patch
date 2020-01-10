@@ -1,0 +1,301 @@
+diff -up nss/gtests/ssl_gtest/ssl_gather_unittest.cc.ssl3gthr nss/gtests/ssl_gtest/ssl_gather_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_gather_unittest.cc.ssl3gthr	2017-04-28 14:40:23.579583263 +0200
++++ nss/gtests/ssl_gtest/ssl_gather_unittest.cc	2017-04-28 14:40:23.579583263 +0200
+@@ -0,0 +1,153 @@
++/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
++/* vim: set ts=2 et sw=2 tw=80: */
++/* This Source Code Form is subject to the terms of the Mozilla Public
++ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
++ * You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++#include "gtest_utils.h"
++#include "tls_connect.h"
++
++namespace nss_test {
++
++class GatherV2ClientHelloTest : public TlsConnectTestBase {
++ public:
++  GatherV2ClientHelloTest() : TlsConnectTestBase(STREAM, 0) {}
++
++  void ConnectExpectMalformedClientHello(const DataBuffer &data) {
++    EnsureTlsSetup();
++
++    auto alert_recorder = new TlsAlertRecorder();
++    server_->SetPacketFilter(alert_recorder);
++
++    client_->SendDirect(data);
++    server_->StartConnect();
++    server_->Handshake();
++    ASSERT_TRUE_WAIT(
++        (server_->error_code() == SSL_ERROR_RX_MALFORMED_CLIENT_HELLO), 2000);
++
++    EXPECT_EQ(kTlsAlertFatal, alert_recorder->level());
++    EXPECT_EQ(illegal_parameter, alert_recorder->description());
++  }
++};
++
++// Gather a 5-byte v3 record, with a zero fragment length. The empty handshake
++// message should be ignored, and the connection will succeed afterwards.
++TEST_F(TlsConnectTest, GatherEmptyV3Record) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x16, 1);    // handshake
++  idx = buffer.Write(idx, 0x0301, 2);  // record_version
++  (void)buffer.Write(idx, 0U, 2);      // length=0
++
++  EnsureTlsSetup();
++  client_->SendDirect(buffer);
++  Connect();
++}
++
++// Gather a 5-byte v3 record, with a fragment length exceeding the maximum.
++TEST_F(TlsConnectTest, GatherExcessiveV3Record) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x16, 1);                            // handshake
++  idx = buffer.Write(idx, 0x0301, 2);                          // record_version
++  (void)buffer.Write(idx, MAX_FRAGMENT_LENGTH + 2048 + 1, 2);  // length=max+1
++
++  EnsureTlsSetup();
++  auto alert_recorder = new TlsAlertRecorder();
++  server_->SetPacketFilter(alert_recorder);
++  client_->SendDirect(buffer);
++  server_->StartConnect();
++  server_->Handshake();
++  ASSERT_TRUE_WAIT((server_->error_code() == SSL_ERROR_RX_RECORD_TOO_LONG),
++                   2000);
++
++  EXPECT_EQ(kTlsAlertFatal, alert_recorder->level());
++  EXPECT_EQ(record_overflow, alert_recorder->description());
++}
++
++// Gather a 3-byte v2 header, with a fragment length of 2.
++TEST_F(GatherV2ClientHelloTest, GatherV2RecordLongHeader) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x0002, 2);  // length=2 (long header)
++  idx = buffer.Write(idx, 0U, 1);      // padding=0
++  (void)buffer.Write(idx, 0U, 2);      // data
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 3-byte v2 header, with a fragment length of 1.
++TEST_F(GatherV2ClientHelloTest, GatherV2RecordLongHeader2) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x0001, 2);  // length=1 (long header)
++  idx = buffer.Write(idx, 0U, 1);      // padding=0
++  idx = buffer.Write(idx, 0U, 1);      // data
++  (void)buffer.Write(idx, 0U, 1);      // surplus (need 5 bytes total)
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 3-byte v2 header, with a zero fragment length.
++TEST_F(GatherV2ClientHelloTest, GatherEmptyV2RecordLongHeader) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0U, 2);  // length=0 (long header)
++  idx = buffer.Write(idx, 0U, 1);  // padding=0
++  (void)buffer.Write(idx, 0U, 2);  // surplus (need 5 bytes total)
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 2-byte v2 header, with a fragment length of 3.
++TEST_F(GatherV2ClientHelloTest, GatherV2RecordShortHeader) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x8003, 2);  // length=3 (short header)
++  (void)buffer.Write(idx, 0U, 3);      // data
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 2-byte v2 header, with a fragment length of 2.
++TEST_F(GatherV2ClientHelloTest, GatherEmptyV2RecordShortHeader2) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x8002, 2);  // length=2 (short header)
++  idx = buffer.Write(idx, 0U, 2);      // data
++  (void)buffer.Write(idx, 0U, 1);      // surplus (need 5 bytes total)
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 2-byte v2 header, with a fragment length of 1.
++TEST_F(GatherV2ClientHelloTest, GatherEmptyV2RecordShortHeader3) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x8001, 2);  // length=1 (short header)
++  idx = buffer.Write(idx, 0U, 1);      // data
++  (void)buffer.Write(idx, 0U, 2);      // surplus (need 5 bytes total)
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++// Gather a 2-byte v2 header, with a zero fragment length.
++TEST_F(GatherV2ClientHelloTest, GatherEmptyV2RecordShortHeader) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x8000, 2);  // length=0 (short header)
++  (void)buffer.Write(idx, 0U, 3);      // surplus (need 5 bytes total)
++
++  ConnectExpectMalformedClientHello(buffer);
++}
++
++}  // namespace nss_test
+diff -up nss/gtests/ssl_gtest/ssl_gtest.gyp.ssl3gthr nss/gtests/ssl_gtest/ssl_gtest.gyp
+--- nss/gtests/ssl_gtest/ssl_gtest.gyp.ssl3gthr	2017-04-28 14:40:23.579583263 +0200
++++ nss/gtests/ssl_gtest/ssl_gtest.gyp	2017-04-28 14:42:07.853153503 +0200
+@@ -25,6 +25,7 @@
+         'ssl_exporter_unittest.cc',
+         'ssl_extension_unittest.cc',
+         'ssl_fuzz_unittest.cc',
++        'ssl_gather_unittest.cc',
+         'ssl_gtest.cc',
+         'ssl_hrr_unittest.cc',
+         'ssl_loopback_unittest.cc',
+diff -up nss/gtests/ssl_gtest/ssl_v2_client_hello_unittest.cc.ssl3gthr nss/gtests/ssl_gtest/ssl_v2_client_hello_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_v2_client_hello_unittest.cc.ssl3gthr	2017-04-05 14:23:56.000000000 +0200
++++ nss/gtests/ssl_gtest/ssl_v2_client_hello_unittest.cc	2017-04-28 14:40:23.579583263 +0200
+@@ -202,6 +202,28 @@ TEST_P(SSLv2ClientHelloTest, Connect) {
+   Connect();
+ }
+ 
++// Sending a v2 ClientHello after a no-op v3 record must fail.
++TEST_P(SSLv2ClientHelloTest, ConnectAfterEmptyV3Record) {
++  DataBuffer buffer;
++
++  size_t idx = 0;
++  idx = buffer.Write(idx, 0x16, 1);    // handshake
++  idx = buffer.Write(idx, 0x0301, 2);  // record_version
++  (void)buffer.Write(idx, 0U, 2);      // length=0
++
++  SetAvailableCipherSuite(TLS_DHE_RSA_WITH_AES_128_CBC_SHA);
++  EnsureTlsSetup();
++  client_->SendDirect(buffer);
++
++  // Need padding so the connection doesn't just time out. With a v2
++  // ClientHello parsed as a v3 record we will use the record version
++  // as the record length.
++  SetPadding(255);
++
++  ConnectExpectFail();
++  EXPECT_EQ(SSL_ERROR_BAD_CLIENT, server_->error_code());
++}
++
+ // Test negotiating TLS 1.3.
+ TEST_F(SSLv2ClientHelloTestF, Connect13) {
+   EnsureTlsSetup();
+diff -up nss/lib/ssl/ssl3gthr.c.ssl3gthr nss/lib/ssl/ssl3gthr.c
+--- nss/lib/ssl/ssl3gthr.c.ssl3gthr	2017-04-05 14:23:56.000000000 +0200
++++ nss/lib/ssl/ssl3gthr.c	2017-04-28 14:40:23.579583263 +0200
+@@ -32,6 +32,7 @@ ssl3_InitGather(sslGather *gs)
+     gs->readOffset = 0;
+     gs->dtlsPacketOffset = 0;
+     gs->dtlsPacket.len = 0;
++    gs->rejectV2Records = PR_FALSE;
+     status = sslBuffer_Grow(&gs->buf, 4096);
+     return status;
+ }
+@@ -147,8 +148,11 @@ ssl3_GatherData(sslSocket *ss, sslGather
+         switch (gs->state) {
+             case GS_HEADER:
+                 /* Check for SSLv2 handshakes. Always assume SSLv3 on clients,
+-                 * support SSLv2 handshakes only when ssl2gs != NULL. */
+-                if (!ssl2gs || ssl3_isLikelyV3Hello(gs->hdr)) {
++                 * support SSLv2 handshakes only when ssl2gs != NULL.
++                 * Always assume v3 after we received the first record. */
++                if (!ssl2gs ||
++                    ss->gs.rejectV2Records ||
++                    ssl3_isLikelyV3Hello(gs->hdr)) {
+                     /* Should have a non-SSLv2 record header in gs->hdr. Extract
+                      * the length of the following encrypted data, and then
+                      * read in the rest of the record into gs->inbuf. */
+@@ -183,7 +187,7 @@ ssl3_GatherData(sslSocket *ss, sslGather
+                 /* This is the max length for an encrypted SSLv3+ fragment. */
+                 if (!v2HdrLength &&
+                     gs->remainder > (MAX_FRAGMENT_LENGTH + 2048)) {
+-                    SSL3_SendAlert(ss, alert_fatal, unexpected_message);
++                    SSL3_SendAlert(ss, alert_fatal, record_overflow);
+                     gs->state = GS_INIT;
+                     PORT_SetError(SSL_ERROR_RX_RECORD_TOO_LONG);
+                     return SECFailure;
+@@ -205,13 +209,28 @@ ssl3_GatherData(sslSocket *ss, sslGather
+                  * many into the gs->hdr[] buffer. Copy them over into inbuf so
+                  * that we can properly process the hello record later. */
+                 if (v2HdrLength) {
++                    /* Reject v2 records that don't even carry enough data to
++                     * resemble a valid ClientHello header. */
++                    if (gs->remainder < SSL_HL_CLIENT_HELLO_HBYTES) {
++                        SSL3_SendAlert(ss, alert_fatal, illegal_parameter);
++                        PORT_SetError(SSL_ERROR_RX_MALFORMED_CLIENT_HELLO);
++                        return SECFailure;
++                    }
++
++                    PORT_Assert(lbp);
+                     gs->inbuf.len = 5 - v2HdrLength;
+                     PORT_Memcpy(lbp, gs->hdr + v2HdrLength, gs->inbuf.len);
+                     gs->remainder -= gs->inbuf.len;
+                     lbp += gs->inbuf.len;
+                 }
+ 
+-                break; /* End this case.  Continue around the loop. */
++                if (gs->remainder > 0) {
++                    break; /* End this case.  Continue around the loop. */
++                }
++
++            /* FALL THROUGH if (gs->remainder == 0) as we just received
++                 * an empty record and there's really no point in calling
++                 * ssl_DefRecv() with buf=NULL and len=0. */
+ 
+             case GS_DATA:
+                 /*
+@@ -219,6 +238,10 @@ ssl3_GatherData(sslSocket *ss, sslGather
+                 */
+                 SSL_TRC(10, ("%d: SSL[%d]: got record of %d bytes",
+                              SSL_GETPID(), ss->fd, gs->inbuf.len));
++
++                /* reject any v2 records from now on */
++                ss->gs.rejectV2Records = PR_TRUE;
++
+                 gs->state = GS_INIT;
+                 return 1;
+         }
+diff -up nss/lib/ssl/ssldef.c.ssl3gthr nss/lib/ssl/ssldef.c
+--- nss/lib/ssl/ssldef.c.ssl3gthr	2017-04-05 14:23:56.000000000 +0200
++++ nss/lib/ssl/ssldef.c	2017-04-28 14:40:23.579583263 +0200
+@@ -66,6 +66,8 @@ ssl_DefRecv(sslSocket *ss, unsigned char
+     PRFileDesc *lower = ss->fd->lower;
+     int rv;
+ 
++    PORT_Assert(buf && len > 0);
++
+     rv = lower->methods->recv(lower, (void *)buf, len, flags, ss->rTimeout);
+     if (rv < 0) {
+         DEFINE_ERROR
+diff -up nss/lib/ssl/sslimpl.h.ssl3gthr nss/lib/ssl/sslimpl.h
+--- nss/lib/ssl/sslimpl.h.ssl3gthr	2017-04-28 14:40:23.566583566 +0200
++++ nss/lib/ssl/sslimpl.h	2017-04-28 14:40:23.580583240 +0200
+@@ -367,6 +367,10 @@ struct sslGatherStr {
+ 
+     /* the start of the buffered DTLS record in dtlsPacket */
+     unsigned int dtlsPacketOffset;
++
++    /* tracks whether we've seen a v3-type record before and must reject
++     * any further v2-type records. */
++    PRBool rejectV2Records;
+ };
+ 
+ /* sslGather.state */

@@ -1,0 +1,56 @@
+changeset:   12950:0e3281e57df5
+branch:      wip/dueno/version-range
+tag:         tip
+user:        Daiki Ueno <dueno@redhat.com>
+date:        Fri Dec 02 15:48:14 2016 +0100
+files:       cmd/selfserv/selfserv.c cmd/strsclnt/strsclnt.c cmd/tstclnt/tstclnt.c
+description:
+Error out if version range cannot be parsed
+
+
+diff --git a/cmd/selfserv/selfserv.c b/cmd/selfserv/selfserv.c
+--- a/cmd/selfserv/selfserv.c
++++ b/cmd/selfserv/selfserv.c
+@@ -2305,7 +2305,10 @@ main(int argc, char **argv)
+                 if (SECU_ParseSSLVersionRangeString(optstate->value,
+                                                     enabledVersions, &enabledVersions) !=
+                     SECSuccess) {
+-                    Usage(progName);
++                    PL_DestroyOptState(optstate);
++                    fprintf(stderr, "Bad version specified.\n");
++                    fprintf(stderr, "Run '%s -h' for usage information.\n", progName);
++                    exit(5);
+                 }
+                 break;
+ 
+diff --git a/cmd/strsclnt/strsclnt.c b/cmd/strsclnt/strsclnt.c
+--- a/cmd/strsclnt/strsclnt.c
++++ b/cmd/strsclnt/strsclnt.c
+@@ -1350,7 +1350,10 @@ main(int argc, char **argv)
+                 if (SECU_ParseSSLVersionRangeString(optstate->value,
+                                                     enabledVersions, &enabledVersions) !=
+                     SECSuccess) {
+-                    Usage(progName);
++                    PL_DestroyOptState(optstate);
++                    fprintf(stderr, "Bad version specified.\n");
++                    fprintf(stderr, "Run '%s -h' for usage information.\n", progName);
++                    exit(5);
+                 }
+                 break;
+ 
+diff --git a/cmd/tstclnt/tstclnt.c b/cmd/tstclnt/tstclnt.c
+--- a/cmd/tstclnt/tstclnt.c
++++ b/cmd/tstclnt/tstclnt.c
+@@ -1610,7 +1610,10 @@ main(int argc, char **argv)
+                 if (SECU_ParseSSLVersionRangeString(optstate->value,
+                                                     enabledVersions, &enabledVersions) !=
+                     SECSuccess) {
+-                    Usage(progName);
++                    PL_DestroyOptState(optstate);
++                    fprintf(stderr, "Bad version specified.\n");
++                    fprintf(stderr, "Run '%s -h' for usage information.\n", progName);
++                    exit(5);
+                 }
+                 break;
+ 
+

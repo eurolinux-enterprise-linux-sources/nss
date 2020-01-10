@@ -1,0 +1,22 @@
+diff -up ./gtests/manifest.mn.skip_util_gtest ./gtests/manifest.mn
+--- ./gtests/manifest.mn.skip_util_gtest	2016-10-03 16:55:58.000000000 +0200
++++ ./gtests/manifest.mn	2016-10-12 11:45:59.863531353 +0200
+@@ -9,7 +9,6 @@ DIRS = \
+ 	google_test \
+ 	common \
+ 	der_gtest \
+-	util_gtest \
+ 	pk11_gtest \
+ 	ssl_gtest \
+         nss_bogo_shim \
+diff -up ./gtests/ssl_gtest/manifest.mn.skip_util_gtest ./gtests/ssl_gtest/manifest.mn
+--- ./gtests/ssl_gtest/manifest.mn.skip_util_gtest	2016-10-12 11:49:39.568532265 +0200
++++ ./gtests/ssl_gtest/manifest.mn	2016-10-12 11:49:59.876070195 +0200
+@@ -47,6 +47,6 @@ REQUIRES = nspr nss libdbm gtest
+ 
+ PROGRAM = ssl_gtest
+ EXTRA_LIBS = $(DIST)/lib/$(LIB_PREFIX)gtest.$(LIB_SUFFIX) \
+-             $(DIST)/lib/$(LIB_PREFIX)softokn.$(LIB_SUFFIX)
++             -lsoftokn3
+ 
+ USE_STATIC_LIBS = 1
