@@ -24,7 +24,7 @@
 Summary:          Network Security Services
 Name:             nss
 Version:          3.28.4
-Release:          3%{?dist}
+Release:          4%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -165,6 +165,8 @@ Patch217: nss-disable-sha384-gtests.patch
 Patch218: nss-disable-ems-gtests.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=1427481
 Patch219: nss-pem-catch-failed-ASN1-decoding-of-RSA-keys.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1377618
+Patch220: nss-transcript.patch
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -300,6 +302,7 @@ pushd nss
 %patch216 -p1 -b .disable-sha384-tests
 %patch217 -p1 -b .disable-sha384-gtests
 %patch218 -p1 -b .disable-ems-gtests
+%patch220 -p1 -b .transcript
 popd
 %patch219 -p1 -b .pem-decoding
 
@@ -862,6 +865,9 @@ fi
 
 
 %changelog
+* Fri Aug  4 2017 Daiki Ueno <dueno@redhat.com> - 3.28.4-4
+- Backport patch to simplify transcript calculation for CertificateVerify
+
 * Mon May 15 2017 Daiki Ueno <dueno@redhat.com> - 3.28.4-3
 - Fix zero-length record treatment for stream ciphers and SSLv2
 
