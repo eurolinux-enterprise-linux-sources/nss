@@ -24,7 +24,7 @@
 Summary:          Network Security Services
 Name:             nss
 Version:          3.36.0
-Release:          8%{?dist}
+Release:          9%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -170,9 +170,8 @@ Patch226: nss-pkcs12-iterations-limit.patch
 # Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1447628
 Patch227: nss-devslot-reinsert.patch
 Patch228: nss-code-signing-trust.patch
-# To revert the change in:
-# https://hg.mozilla.org/projects/nss/rev/896e3eb3a799
-Patch229: nss-lockcert-api-change.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1483128
+Patch229: nss-ssl2-server-random.patch
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -311,7 +310,7 @@ pushd nss
 %patch226 -p1 -b .pkcs12-iterations-limit
 %patch227 -p1 -b .devslot-reinsert
 %patch228 -p1 -b .code-signing-trust
-%patch229 -p1 -R -b .lockcert-api-change
+%patch229 -p1 -b .ssl2-server-random
 popd
 %patch221 -p1 -b .pem-decoding
 
@@ -892,6 +891,11 @@ fi
 
 
 %changelog
+* Tue Aug 28 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-9
+- Backport upstream fix for CVE-2018-12384
+- Remove nss-lockcert-api-change.patch, which turned out to be a
+  mistake (the symbol was not exported from libnss)
+
 * Wed Apr 18 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-8
 - Restore CERT_LockCertTrust and CERT_UnlockCertTrust back in cert.h
 
