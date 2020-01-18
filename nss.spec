@@ -1,6 +1,6 @@
 %global nspr_version 4.19.0
 %global nss_util_version 3.36.0
-%global nss_util_build -1.1
+%global nss_util_build -1
 # adjust to the version that gets submitted for FIPS validation
 %global nss_softokn_fips_version 3.36.0
 %global nss_softokn_version 3.36.0
@@ -27,7 +27,7 @@
 Summary:          Network Security Services
 Name:             nss
 Version:          3.36.0
-Release:          7.1%{?dist}
+Release:          7%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -93,9 +93,6 @@ Source33:         TestOldCA.p12
 Patch2:           add-relro-linker-option.patch
 Patch3:           renegotiate-transitional.patch
 Patch16:          nss-539183.patch
-# Remove this patch on when we rebase to NSS 3.40, bug 1639404
-Patch17:          nss-3.36-ipsec_cert_vfy.patch
-Patch18:	  nss-tests-paypal-certs-v2.patch
 # TODO: Remove this patch when the ocsp test are fixed
 Patch40:          nss-3.14.0.0-disble-ocsp-test.patch
 # Fedora / RHEL-only patch, the templates directory was originally introduced to support mod_revocator
@@ -224,10 +221,6 @@ low level services.
 %patch2 -p0 -b .relro
 %patch3 -p0 -b .transitional
 %patch16 -p0 -b .539183
-pushd nss
-%patch17 -p1 -b .ipsec_vfy
-%patch18 -p1 -b .update_paypal
-popd
 %patch40 -p0 -b .noocsptest
 %patch47 -p0 -b .templates
 %patch49 -p0 -b .skipthem
@@ -856,9 +849,6 @@ fi
 
 
 %changelog
-* Mon Nov 12 2018 Bob Relyea <rrelyea@redhat.com> - 3.36.0-7.1
-- Update the cert verify code to allow a new ipsec usage and follow RFC 4945
-
 * Wed Aug 29 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-7
 - Backport upstream fix for CVE-2018-12384
 - Remove nss-lockcert-api-change.patch, which turned out to be a
