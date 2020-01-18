@@ -1,0 +1,13 @@
+diff -up ./nss/doc/certutil.xml.add_ipsec_usage ./nss/doc/certutil.xml
+--- ./nss/doc/certutil.xml.add_ipsec_usage	2019-06-05 09:40:37.848895763 -0700
++++ ./nss/doc/certutil.xml	2019-06-05 09:40:47.079891058 -0700
+@@ -428,6 +428,9 @@ of the attribute codes:
+ 	<listitem>
+ <para><command>J</command> (as an object signer)</para>
+ 	</listitem>
++	<listitem>
++<para><command>I</command> (as an IPSEC user)</para>
++	</listitem>
+ 	</itemizedlist></listitem>
+       </varlistentry>
+ 

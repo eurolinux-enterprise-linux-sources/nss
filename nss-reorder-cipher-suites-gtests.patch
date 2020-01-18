@@ -1,7 +1,7 @@
 diff -up nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests nss/gtests/ssl_gtest/ssl_auth_unittest.cc
---- nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests	2018-03-05 16:58:32.000000000 +0100
-+++ nss/gtests/ssl_gtest/ssl_auth_unittest.cc	2018-03-09 17:29:32.985313219 +0100
-@@ -231,7 +231,9 @@ static SSLNamedGroup NamedGroupForEcdsa3
+--- nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests	2019-03-16 01:25:08.000000000 +0100
++++ nss/gtests/ssl_gtest/ssl_auth_unittest.cc	2019-03-22 11:25:50.523173253 +0100
+@@ -728,7 +728,9 @@ static SSLNamedGroup NamedGroupForEcdsa3
    // NSS tries to match the group size to the symmetric cipher. In TLS 1.1 and
    // 1.0, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA is the highest priority suite, so
    // we use P-384. With TLS 1.2 on we pick AES-128 GCM so use x25519.
@@ -12,7 +12,7 @@ diff -up nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests 
      return ssl_grp_ec_secp384r1;
    }
    return ssl_grp_ec_curve25519;
-@@ -870,20 +872,24 @@ INSTANTIATE_TEST_CASE_P(
+@@ -1377,20 +1379,24 @@ INSTANTIATE_TEST_CASE_P(
                         ::testing::Values(TlsAgent::kServerEcdsa256),
                         ::testing::Values(ssl_auth_ecdsa),
                         ::testing::Values(ssl_sig_ecdsa_secp256r1_sha256)));
@@ -39,9 +39,63 @@ diff -up nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests 
  INSTANTIATE_TEST_CASE_P(
      SignatureSchemeEcdsaSha1, TlsSignatureSchemeConfiguration,
      ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
-@@ -892,4 +898,5 @@ INSTANTIATE_TEST_CASE_P(
+@@ -1399,4 +1405,5 @@ INSTANTIATE_TEST_CASE_P(
                                           TlsAgent::kServerEcdsa384),
                         ::testing::Values(ssl_auth_ecdsa),
                         ::testing::Values(ssl_sig_ecdsa_sha1)));
 +#endif
  }  // namespace nss_test
+diff -up nss/gtests/ssl_gtest/ssl_recordsize_unittest.cc.reorder-cipher-suites-gtests nss/gtests/ssl_gtest/ssl_recordsize_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_recordsize_unittest.cc.reorder-cipher-suites-gtests	2019-03-16 01:25:08.000000000 +0100
++++ nss/gtests/ssl_gtest/ssl_recordsize_unittest.cc	2019-03-22 11:25:50.523173253 +0100
+@@ -71,11 +71,13 @@ void CheckRecordSizes(const std::shared_
+       break;
+ 
+     case TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
++    case TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
+       expansion = 16;
+       iv = 8;
+       break;
+ 
+     case TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:
++    case TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:
+       // Expansion is 20 for the MAC.  Maximum block padding is 16.  Maximum
+       // padding is added when the input plus the MAC is an exact multiple of
+       // the block size.
+diff -up nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc.reorder-cipher-suites-gtests nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc.reorder-cipher-suites-gtests	2019-03-16 01:25:08.000000000 +0100
++++ nss/gtests/ssl_gtest/ssl_staticrsa_unittest.cc	2019-03-22 11:29:30.452433420 +0100
+@@ -133,7 +133,19 @@ TEST_P(TlsConnectGenericPre13, TooLargeR
+ TEST_P(TlsConnectGeneric, ServerAuthBiggestRsa) {
+   Reset(TlsAgent::kRsa8192);
+   Connect();
+-  CheckKeys();
++  if (version_ >= SSL_LIBRARY_VERSION_TLS_1_3) {
++    CheckKeys();
++  } else {
++    // in TLS 1.2 or TLS 1.1, AES-256 is selected by default, which
++    // needs a different kea setup
++    SSLSignatureScheme scheme;
++    if (version_ >= SSL_LIBRARY_VERSION_TLS_1_2) {
++        scheme = ssl_sig_rsa_pss_rsae_sha256;
++    } else {
++        scheme = ssl_sig_rsa_pkcs1_sha256;
++    }
++    CheckKeys(ssl_kea_ecdh, ssl_grp_ec_secp521r1, ssl_auth_rsa_sign, scheme);
++  }
+ }
+ 
+ }  // namespace nss_test
+diff -up nss/gtests/ssl_gtest/tls_agent.cc.reorder-cipher-suites-gtests nss/gtests/ssl_gtest/tls_agent.cc
+--- nss/gtests/ssl_gtest/tls_agent.cc.reorder-cipher-suites-gtests	2019-03-22 11:28:19.936944328 +0100
++++ nss/gtests/ssl_gtest/tls_agent.cc	2019-03-22 11:29:58.712828287 +0100
+@@ -532,6 +532,9 @@ void TlsAgent::CheckKEA(SSLKEAType kea,
+       case ssl_grp_ec_secp384r1:
+         kea_size = 384;
+         break;
++      case ssl_grp_ec_secp521r1:
++        kea_size = 521;
++        break;
+       case ssl_grp_ffdhe_2048:
+         kea_size = 2048;
+         break;

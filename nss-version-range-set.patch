@@ -1,0 +1,43 @@
+diff -up nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc.version-range-set nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc.version-range-set	2019-04-26 16:56:32.753283497 +0200
++++ nss/gtests/ssl_gtest/ssl_versionpolicy_unittest.cc	2019-04-26 16:56:51.096889439 +0200
+@@ -151,12 +151,6 @@ class TestPolicyVersionRange
+   }
+ 
+   bool IsValidInputForVersionRangeSet(SSLVersionRange* expectedEffectiveRange) {
+-    if (input_.min() <= SSL_LIBRARY_VERSION_3_0 &&
+-        input_.max() >= SSL_LIBRARY_VERSION_TLS_1_3) {
+-      // This is always invalid input, independent of policy
+-      return false;
+-    }
+-
+     if (input_.min() < library_.min() || input_.max() > library_.max() ||
+         input_.min() > input_.max()) {
+       // Asking for unsupported ranges is invalid input for VersionRangeSet
+diff -up nss/lib/ssl/sslsock.c.version-range-set nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.version-range-set	2019-04-26 16:56:11.810733383 +0200
++++ nss/lib/ssl/sslsock.c	2019-04-26 16:56:11.813733319 +0200
+@@ -2542,13 +2542,6 @@ SSL_VersionRangeGetDefault(SSLProtocolVa
+     return ssl3_CreateOverlapWithPolicy(protocolVariant, vrange, vrange);
+ }
+ 
+-static PRBool
+-ssl3_HasConflictingSSLVersions(const SSLVersionRange *vrange)
+-{
+-    return (vrange->min <= SSL_LIBRARY_VERSION_3_0 &&
+-            vrange->max >= SSL_LIBRARY_VERSION_TLS_1_3);
+-}
+-
+ static SECStatus
+ ssl3_CheckRangeValidAndConstrainByPolicy(SSLProtocolVariant protocolVariant,
+                                          SSLVersionRange *vrange)
+@@ -2557,8 +2550,7 @@ ssl3_CheckRangeValidAndConstrainByPolicy
+ 
+     if (vrange->min > vrange->max ||
+         !ssl3_VersionIsSupportedByCode(protocolVariant, vrange->min) ||
+-        !ssl3_VersionIsSupportedByCode(protocolVariant, vrange->max) ||
+-        ssl3_HasConflictingSSLVersions(vrange)) {
++        !ssl3_VersionIsSupportedByCode(protocolVariant, vrange->max)) {
+         PORT_SetError(SSL_ERROR_INVALID_VERSION_RANGE);
+         return SECFailure;
+     }

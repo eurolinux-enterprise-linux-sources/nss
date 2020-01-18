@@ -1,7 +1,7 @@
 diff -up nss/lib/ssl/ssl3con.c.disable-cipher-suites nss/lib/ssl/ssl3con.c
---- nss/lib/ssl/ssl3con.c.disable-cipher-suites	2017-04-26 11:53:57.980039632 +0200
-+++ nss/lib/ssl/ssl3con.c	2017-04-26 11:55:56.374264466 +0200
-@@ -97,7 +97,10 @@ static ssl3CipherSuiteCfg cipherSuites[s
+--- nss/lib/ssl/ssl3con.c.disable-cipher-suites	2019-03-21 14:24:14.660150519 +0100
++++ nss/lib/ssl/ssl3con.c	2019-03-21 14:25:12.997929443 +0100
+@@ -96,7 +96,10 @@ static ssl3CipherSuiteCfg cipherSuites[s
   { TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, SSL_ALLOWED, PR_TRUE, PR_FALSE},
   { TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256, SSL_ALLOWED, PR_TRUE, PR_FALSE},
   { TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,    SSL_ALLOWED, PR_TRUE, PR_FALSE},
@@ -12,8 +12,8 @@ diff -up nss/lib/ssl/ssl3con.c.disable-cipher-suites nss/lib/ssl/ssl3con.c
 + { TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, SSL_ALLOWED, PR_FALSE, PR_FALSE},
   { TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,   SSL_ALLOWED, PR_FALSE, PR_FALSE},
   { TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,        SSL_ALLOWED, PR_FALSE, PR_FALSE},
-  { TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,   SSL_ALLOWED, PR_FALSE, PR_FALSE},
-@@ -106,7 +109,10 @@ static ssl3CipherSuiteCfg cipherSuites[s
+  { TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,   SSL_ALLOWED, PR_TRUE, PR_FALSE},
+@@ -105,7 +108,10 @@ static ssl3CipherSuiteCfg cipherSuites[s
   { TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,   SSL_ALLOWED, PR_TRUE, PR_FALSE},
   { TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,   SSL_ALLOWED, PR_TRUE, PR_FALSE},
   { TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,      SSL_ALLOWED, PR_TRUE, PR_FALSE},
@@ -24,4 +24,4 @@ diff -up nss/lib/ssl/ssl3con.c.disable-cipher-suites nss/lib/ssl/ssl3con.c
 + { TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,   SSL_ALLOWED, PR_FALSE, PR_FALSE},
   { TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,     SSL_ALLOWED, PR_FALSE, PR_FALSE},
   { TLS_ECDHE_RSA_WITH_RC4_128_SHA,          SSL_ALLOWED, PR_FALSE, PR_FALSE},
-  { TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,     SSL_ALLOWED, PR_FALSE, PR_FALSE},
+  { TLS_DHE_RSA_WITH_AES_256_GCM_SHA384,     SSL_ALLOWED, PR_TRUE,  PR_FALSE},

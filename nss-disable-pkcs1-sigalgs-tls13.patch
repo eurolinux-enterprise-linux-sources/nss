@@ -1,0 +1,202 @@
+# HG changeset patch
+# User Daiki Ueno <dueno@redhat.com>
+# Date 1559031046 -7200
+#      Tue May 28 10:10:46 2019 +0200
+# Node ID 0a4e8b72a92e144663c2f35d3836f7828cfc97f2
+# Parent  370a9e85f216f5f4ff277995a997c5c9b23a819f
+Bug 1552208, prohibit use of RSASSA-PKCS1-v1_5 algorithms in TLS 1.3, r=mt
+
+Reviewers: mt
+
+Reviewed By: mt
+
+Subscribers: mt, jcj, ueno, rrelyea, HubertKario, KevinJacobs
+
+Tags: #secure-revision, #bmo-crypto-core-security
+
+Bug #: 1552208
+
+Differential Revision: https://phabricator.services.mozilla.com/D32454
+
+diff --git a/gtests/ssl_gtest/ssl_auth_unittest.cc b/gtests/ssl_gtest/ssl_auth_unittest.cc
+--- a/gtests/ssl_gtest/ssl_auth_unittest.cc
++++ b/gtests/ssl_gtest/ssl_auth_unittest.cc
+@@ -701,6 +701,44 @@ TEST_P(TlsConnectTls12, ClientAuthIncons
+   ConnectExpectAlert(server_, kTlsAlertIllegalParameter);
+ }
+ 
++TEST_P(TlsConnectTls13, ClientAuthPkcs1SignatureScheme) {
++  static const SSLSignatureScheme kSignatureScheme[] = {
++      ssl_sig_rsa_pkcs1_sha256, ssl_sig_rsa_pss_rsae_sha256};
++
++  Reset(TlsAgent::kServerRsa, "rsa");
++  client_->SetSignatureSchemes(kSignatureScheme,
++                               PR_ARRAY_SIZE(kSignatureScheme));
++  server_->SetSignatureSchemes(kSignatureScheme,
++                               PR_ARRAY_SIZE(kSignatureScheme));
++  client_->SetupClientAuth();
++  server_->RequestClientAuth(true);
++
++  auto capture_cert_verify = MakeTlsFilter<TlsHandshakeRecorder>(
++      client_, kTlsHandshakeCertificateVerify);
++  capture_cert_verify->EnableDecryption();
++
++  Connect();
++  CheckSigScheme(capture_cert_verify, 0, server_, ssl_sig_rsa_pss_rsae_sha256,
++                 1024);
++}
++
++TEST_P(TlsConnectTls13, ClientAuthPkcs1SignatureSchemeOnly) {
++  static const SSLSignatureScheme kSignatureScheme[] = {
++      ssl_sig_rsa_pkcs1_sha256};
++
++  Reset(TlsAgent::kServerRsa, "rsa");
++  client_->SetSignatureSchemes(kSignatureScheme,
++                               PR_ARRAY_SIZE(kSignatureScheme));
++  server_->SetSignatureSchemes(kSignatureScheme,
++                               PR_ARRAY_SIZE(kSignatureScheme));
++  client_->SetupClientAuth();
++  server_->RequestClientAuth(true);
++
++  ConnectExpectAlert(server_, kTlsAlertHandshakeFailure);
++  server_->CheckErrorCode(SSL_ERROR_UNSUPPORTED_SIGNATURE_ALGORITHM);
++  client_->CheckErrorCode(SSL_ERROR_NO_CYPHER_OVERLAP);
++}
++
+ class TlsZeroCertificateRequestSigAlgsFilter : public TlsHandshakeFilter {
+  public:
+   TlsZeroCertificateRequestSigAlgsFilter(const std::shared_ptr<TlsAgent>& a)
+@@ -933,7 +971,7 @@ TEST_P(TlsConnectTls13, InconsistentSign
+   client_->CheckErrorCode(SSL_ERROR_INCORRECT_SIGNATURE_ALGORITHM);
+ }
+ 
+-TEST_P(TlsConnectTls12Plus, RequestClientAuthWithSha384) {
++TEST_P(TlsConnectTls12, RequestClientAuthWithSha384) {
+   server_->SetSignatureSchemes(kSignatureSchemeRsaSha384,
+                                PR_ARRAY_SIZE(kSignatureSchemeRsaSha384));
+   server_->RequestClientAuth(false);
+@@ -1395,12 +1433,21 @@ TEST_P(TlsSignatureSchemeConfiguration, 
+ INSTANTIATE_TEST_CASE_P(
+     SignatureSchemeRsa, TlsSignatureSchemeConfiguration,
+     ::testing::Combine(
+-        TlsConnectTestBase::kTlsVariantsAll, TlsConnectTestBase::kTlsV12Plus,
++        TlsConnectTestBase::kTlsVariantsAll, TlsConnectTestBase::kTlsV12,
+         ::testing::Values(TlsAgent::kServerRsaSign),
+         ::testing::Values(ssl_auth_rsa_sign),
+         ::testing::Values(ssl_sig_rsa_pkcs1_sha256, ssl_sig_rsa_pkcs1_sha384,
+                           ssl_sig_rsa_pkcs1_sha512, ssl_sig_rsa_pss_rsae_sha256,
+                           ssl_sig_rsa_pss_rsae_sha384)));
++// RSASSA-PKCS1-v1_5 is not allowed to be used in TLS 1.3
++INSTANTIATE_TEST_CASE_P(
++    SignatureSchemeRsaTls13, TlsSignatureSchemeConfiguration,
++    ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
++                       TlsConnectTestBase::kTlsV13,
++                       ::testing::Values(TlsAgent::kServerRsaSign),
++                       ::testing::Values(ssl_auth_rsa_sign),
++                       ::testing::Values(ssl_sig_rsa_pss_rsae_sha256,
++                                         ssl_sig_rsa_pss_rsae_sha384)));
+ // PSS with SHA-512 needs a bigger key to work.
+ INSTANTIATE_TEST_CASE_P(
+     SignatureSchemeBigRsa, TlsSignatureSchemeConfiguration,
+diff --git a/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc b/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
+--- a/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
++++ b/gtests/ssl_gtest/ssl_ciphersuite_unittest.cc
+@@ -68,12 +68,6 @@ class TlsCipherSuiteTestBase : public Tl
+   virtual void SetupCertificate() {
+     if (version_ >= SSL_LIBRARY_VERSION_TLS_1_3) {
+       switch (sig_scheme_) {
+-        case ssl_sig_rsa_pkcs1_sha256:
+-        case ssl_sig_rsa_pkcs1_sha384:
+-        case ssl_sig_rsa_pkcs1_sha512:
+-          Reset(TlsAgent::kServerRsaSign);
+-          auth_type_ = ssl_auth_rsa_sign;
+-          break;
+         case ssl_sig_rsa_pss_rsae_sha256:
+         case ssl_sig_rsa_pss_rsae_sha384:
+           Reset(TlsAgent::kServerRsaSign);
+@@ -330,6 +324,12 @@ static SSLSignatureScheme kSignatureSche
+     ssl_sig_rsa_pss_pss_sha256,     ssl_sig_rsa_pss_pss_sha384,
+     ssl_sig_rsa_pss_pss_sha512};
+ 
++static SSLSignatureScheme kSignatureSchemesParamsArrTls13[] = {
++    ssl_sig_ecdsa_secp256r1_sha256, ssl_sig_ecdsa_secp384r1_sha384,
++    ssl_sig_rsa_pss_rsae_sha256,    ssl_sig_rsa_pss_rsae_sha384,
++    ssl_sig_rsa_pss_rsae_sha512,    ssl_sig_rsa_pss_pss_sha256,
++    ssl_sig_rsa_pss_pss_sha384,     ssl_sig_rsa_pss_pss_sha512};
++
+ INSTANTIATE_CIPHER_TEST_P(RC4, Stream, V10ToV12, kDummyNamedGroupParams,
+                           kDummySignatureSchemesParams,
+                           TLS_RSA_WITH_RC4_128_SHA,
+@@ -394,7 +394,7 @@ INSTANTIATE_CIPHER_TEST_P(
+ #ifndef NSS_DISABLE_TLS_1_3
+ INSTANTIATE_CIPHER_TEST_P(TLS13, All, V13,
+                           ::testing::ValuesIn(kFasterDHEGroups),
+-                          ::testing::ValuesIn(kSignatureSchemesParamsArr),
++                          ::testing::ValuesIn(kSignatureSchemesParamsArrTls13),
+                           TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256,
+                           TLS_AES_256_GCM_SHA384);
+ INSTANTIATE_CIPHER_TEST_P(TLS13AllGroups, All, V13,
+diff --git a/gtests/ssl_gtest/ssl_extension_unittest.cc b/gtests/ssl_gtest/ssl_extension_unittest.cc
+--- a/gtests/ssl_gtest/ssl_extension_unittest.cc
++++ b/gtests/ssl_gtest/ssl_extension_unittest.cc
+@@ -436,14 +436,14 @@ TEST_P(TlsExtensionTest12Plus, Signature
+ }
+ 
+ TEST_F(TlsExtensionTest13Stream, SignatureAlgorithmsPrecedingGarbage) {
+-  // 31 unknown signature algorithms followed by sha-256, rsa
++  // 31 unknown signature algorithms followed by sha-256, rsa-pss
+   const uint8_t val[] = {
+       0x00, 0x40, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+-      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04, 0x01};
++      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x08, 0x04};
+   DataBuffer extension(val, sizeof(val));
+   MakeTlsFilter<TlsExtensionReplacer>(client_, ssl_signature_algorithms_xtn,
+                                       extension);
+diff --git a/lib/ssl/ssl3con.c b/lib/ssl/ssl3con.c
+--- a/lib/ssl/ssl3con.c
++++ b/lib/ssl/ssl3con.c
+@@ -64,6 +64,7 @@ static SECStatus ssl3_FlushHandshakeMess
+ static CK_MECHANISM_TYPE ssl3_GetHashMechanismByHashType(SSLHashType hashType);
+ static CK_MECHANISM_TYPE ssl3_GetMgfMechanismByHashType(SSLHashType hash);
+ PRBool ssl_IsRsaPssSignatureScheme(SSLSignatureScheme scheme);
++PRBool ssl_IsRsaPkcs1SignatureScheme(SSLSignatureScheme scheme);
+ PRBool ssl_IsDsaSignatureScheme(SSLSignatureScheme scheme);
+ 
+ const PRUint8 ssl_hello_retry_random[] = {
+@@ -4101,6 +4102,9 @@ ssl_SignatureSchemeValid(SSLSignatureSch
+         if (ssl_SignatureSchemeToHashType(scheme) == ssl_hash_sha1) {
+             return PR_FALSE;
+         }
++        if (ssl_IsRsaPkcs1SignatureScheme(scheme)) {
++            return PR_FALSE;
++        }
+         /* With TLS 1.3, EC keys should have been selected based on calling
+          * ssl_SignatureSchemeFromSpki(), reject them otherwise. */
+         return spkiOid != SEC_OID_ANSIX962_EC_PUBLIC_KEY;
+@@ -4351,6 +4355,22 @@ ssl_IsRsaPssSignatureScheme(SSLSignature
+ }
+ 
+ PRBool
++ssl_IsRsaPkcs1SignatureScheme(SSLSignatureScheme scheme)
++{
++    switch (scheme) {
++        case ssl_sig_rsa_pkcs1_sha256:
++        case ssl_sig_rsa_pkcs1_sha384:
++        case ssl_sig_rsa_pkcs1_sha512:
++        case ssl_sig_rsa_pkcs1_sha1:
++            return PR_TRUE;
++
++        default:
++            return PR_FALSE;
++    }
++    return PR_FALSE;
++}
++
++PRBool
+ ssl_IsDsaSignatureScheme(SSLSignatureScheme scheme)
+ {
+     switch (scheme) {

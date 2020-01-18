@@ -1,7 +1,7 @@
-diff --git a/lib/sysinit/nsssysinit.c b/lib/sysinit/nsssysinit.c
---- a/lib/sysinit/nsssysinit.c
-+++ b/lib/sysinit/nsssysinit.c
-@@ -1,11 +1,15 @@
+diff -up nss/lib/sysinit/nsssysinit.c.sysinit-getenv nss/lib/sysinit/nsssysinit.c
+--- nss/lib/sysinit/nsssysinit.c.sysinit-getenv	2019-04-26 12:08:48.155862312 +0200
++++ nss/lib/sysinit/nsssysinit.c	2019-04-26 12:09:13.228344780 +0200
+@@ -1,6 +1,10 @@
  /* This Source Code Form is subject to the terms of the Mozilla Public
   * License, v. 2.0. If a copy of the MPL was not distributed with this
   * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -12,17 +12,7 @@ diff --git a/lib/sysinit/nsssysinit.c b/lib/sysinit/nsssysinit.c
  #include "seccomon.h"
  #include "prio.h"
  #include "prprf.h"
- #include "plhash.h"
- #include "prenv.h"
- 
- /*
-  * The following provides a default example for operating systems to set up
-@@ -37,17 +41,17 @@ testdir(char *dir)
-     return S_ISDIR(buf.st_mode);
- }
- 
- #define NSS_USER_PATH1 "/.pki"
- #define NSS_USER_PATH2 "/nssdb"
+@@ -41,7 +45,7 @@ testdir(char *dir)
  static char *
  getUserDB(void)
  {
@@ -31,17 +21,7 @@ diff --git a/lib/sysinit/nsssysinit.c b/lib/sysinit/nsssysinit.c
      char *nssdir = NULL;
  
      if (userdir == NULL) {
-         return NULL;
-     }
- 
-     nssdir = PORT_Alloc(strlen(userdir) + sizeof(NSS_USER_PATH1) + sizeof(NSS_USER_PATH2));
-     if (nssdir == NULL) {
-@@ -129,17 +133,17 @@ userCanModifySystemDB()
- #else
- #error "Need to write getUserDB, SystemDB, userIsRoot, and userCanModifySystemDB functions"
- #endif
- #endif
- 
+@@ -95,7 +99,7 @@ userCanModifySystemDB()
  static PRBool
  getFIPSEnv(void)
  {
@@ -50,8 +30,3 @@ diff --git a/lib/sysinit/nsssysinit.c b/lib/sysinit/nsssysinit.c
      if (!fipsEnv) {
          return PR_FALSE;
      }
-     if ((strcasecmp(fipsEnv, "fips") == 0) ||
-         (strcasecmp(fipsEnv, "true") == 0) ||
-         (strcasecmp(fipsEnv, "on") == 0) ||
-         (strcasecmp(fipsEnv, "1") == 0)) {
-         return PR_TRUE;

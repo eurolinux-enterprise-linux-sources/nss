@@ -1,0 +1,30 @@
+diff --git a/lib/ssl/sslsock.c b/lib/ssl/sslsock.c
+--- a/lib/ssl/sslsock.c
++++ b/lib/ssl/sslsock.c
+@@ -2382,16 +2382,26 @@ ssl3_CreateOverlapWithPolicy(SSLProtocol
+     rv = ssl3_GetEffectiveVersionPolicy(protocolVariant,
+                                         &effectivePolicyBoundary);
+     if (rv == SECFailure) {
+         /* SECFailure means internal failure or invalid configuration. */
+         overlap->min = overlap->max = SSL_LIBRARY_VERSION_NONE;
+         return SECFailure;
+     }
+ 
++    /* TODO: TLSv1.3 doesn't work yet under FIPS mode */
++    if (PK11_IsFIPS()) {
++        if (effectivePolicyBoundary.min >= SSL_LIBRARY_VERSION_TLS_1_3) {
++            effectivePolicyBoundary.min = SSL_LIBRARY_VERSION_TLS_1_2;
++        }
++        if (effectivePolicyBoundary.max >= SSL_LIBRARY_VERSION_TLS_1_3) {
++            effectivePolicyBoundary.max = SSL_LIBRARY_VERSION_TLS_1_2;
++        }
++    }
++
+     vrange.min = PR_MAX(input->min, effectivePolicyBoundary.min);
+     vrange.max = PR_MIN(input->max, effectivePolicyBoundary.max);
+ 
+     if (vrange.max < vrange.min) {
+         /* there was no overlap, turn off range altogether */
+         overlap->min = overlap->max = SSL_LIBRARY_VERSION_NONE;
+         return SECFailure;
+     }
