@@ -1,0 +1,12 @@
+diff -up ./lib/ssl/sslsock.c.1171318 ./lib/ssl/sslsock.c
+--- ./lib/ssl/sslsock.c.1171318	2016-02-04 10:57:08.489310227 -0800
++++ ./lib/ssl/sslsock.c	2016-02-04 11:02:59.290818001 -0800
+@@ -92,7 +92,7 @@ static sslOptions ssl_defaults = {
+  * default range of enabled SSL/TLS protocols
+  */
+ static SSLVersionRange versions_defaults_stream = {
+-    SSL_LIBRARY_VERSION_TLS_1_0,
++    SSL_LIBRARY_VERSION_3_0,
+     SSL_LIBRARY_VERSION_TLS_1_2
+ };
+ 

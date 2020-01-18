@@ -1,0 +1,24 @@
+# HG changeset patch
+# User J.C. Jones <jjones@mozilla.com>
+# Date 1521824312 25200
+#      Fri Mar 23 09:58:32 2018 -0700
+# Branch NSS_3_36_BRANCH
+# Node ID ba3f1cc8a8e644ee6f8a763624d97e987816304d
+# Parent  2355c9e3bba477c947a09a2fe8b1ed8971fab1cb
+Bug 1278071 - Limit iterations for PKCS #12 export for Windows r=kaie
+
+Per Bug 1436873, Windows is limited on importing PKCS12 files of 600k rounds
+or less. So for compatibility's sake, let's limit there, too.
+
+diff --git a/lib/pkcs7/p7create.c b/lib/pkcs7/p7create.c
+--- a/lib/pkcs7/p7create.c
++++ b/lib/pkcs7/p7create.c
+@@ -22,7 +22,7 @@ const int NSS_PBE_DEFAULT_ITERATION_COUN
+ #ifdef DEBUG
+     10000
+ #else
+-    1000000
++    600000
+ #endif
+     ;
+ 

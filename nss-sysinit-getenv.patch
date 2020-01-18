@@ -1,0 +1,57 @@
+diff --git a/lib/sysinit/nsssysinit.c b/lib/sysinit/nsssysinit.c
+--- a/lib/sysinit/nsssysinit.c
++++ b/lib/sysinit/nsssysinit.c
+@@ -1,11 +1,15 @@
+ /* This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
++
++#define _GNU_SOURCE 1
++#include <stdlib.h>
++
+ #include "seccomon.h"
+ #include "prio.h"
+ #include "prprf.h"
+ #include "plhash.h"
+ #include "prenv.h"
+ 
+ /*
+  * The following provides a default example for operating systems to set up
+@@ -37,17 +41,17 @@ testdir(char *dir)
+     return S_ISDIR(buf.st_mode);
+ }
+ 
+ #define NSS_USER_PATH1 "/.pki"
+ #define NSS_USER_PATH2 "/nssdb"
+ static char *
+ getUserDB(void)
+ {
+-    char *userdir = PR_GetEnvSecure("HOME");
++    char *userdir = secure_getenv("HOME");
+     char *nssdir = NULL;
+ 
+     if (userdir == NULL) {
+         return NULL;
+     }
+ 
+     nssdir = PORT_Alloc(strlen(userdir) + sizeof(NSS_USER_PATH1) + sizeof(NSS_USER_PATH2));
+     if (nssdir == NULL) {
+@@ -129,17 +133,17 @@ userCanModifySystemDB()
+ #else
+ #error "Need to write getUserDB, SystemDB, userIsRoot, and userCanModifySystemDB functions"
+ #endif
+ #endif
+ 
+ static PRBool
+ getFIPSEnv(void)
+ {
+-    char *fipsEnv = PR_GetEnvSecure("NSS_FIPS");
++    char *fipsEnv = secure_getenv("NSS_FIPS");
+     if (!fipsEnv) {
+         return PR_FALSE;
+     }
+     if ((strcasecmp(fipsEnv, "fips") == 0) ||
+         (strcasecmp(fipsEnv, "true") == 0) ||
+         (strcasecmp(fipsEnv, "on") == 0) ||
+         (strcasecmp(fipsEnv, "1") == 0)) {
+         return PR_TRUE;

@@ -1,0 +1,26 @@
+diff -up nss/lib/ssl/config.mk.disableSSL2libssl nss/lib/ssl/config.mk
+--- nss/lib/ssl/config.mk.disableSSL2libssl	2017-01-04 15:24:24.000000000 +0100
++++ nss/lib/ssl/config.mk	2017-01-16 10:53:47.629894929 +0100
+@@ -69,3 +69,8 @@ endif
+ ifdef NSS_DISABLE_TLS_1_3
+ DEFINES += -DNSS_DISABLE_TLS_1_3
+ endif
++
++ifdef NSS_NO_SSL2
++DEFINES += -DNSS_NO_SSL2
++endif
++
+diff -up nss/lib/ssl/sslsock.c.disableSSL2libssl nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.disableSSL2libssl	2017-01-16 10:53:47.615895344 +0100
++++ nss/lib/ssl/sslsock.c	2017-01-16 10:54:16.088051233 +0100
+@@ -1221,6 +1221,10 @@ SSL_OptionSetDefault(PRInt32 which, PRBo
+ static PRBool
+ ssl_IsRemovedCipherSuite(PRInt32 suite)
+ {
++#ifdef NSS_NO_SSL2
++    if (SSL_IS_SSL2_CIPHER(suite))
++        return PR_TRUE;
++#endif /* NSS_NO_SSL2 */
+     switch (suite) {
+         case SSL_FORTEZZA_DMS_WITH_NULL_SHA:
+         case SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA:

@@ -1,0 +1,25 @@
+diff -up nss/lib/ssl/sslsock.c.1026677_ignore_set_policy nss/lib/ssl/sslsock.c
+--- nss/lib/ssl/sslsock.c.1026677_ignore_set_policy	2017-01-13 17:10:36.049530395 +0100
++++ nss/lib/ssl/sslsock.c	2017-01-13 17:10:36.053530297 +0100
+@@ -1391,7 +1391,6 @@ SSL_CipherPrefGet(PRFileDesc *fd, PRInt3
+ SECStatus
+ NSS_SetDomesticPolicy(void)
+ {
+-    SECStatus status = SECSuccess;
+     const PRUint16 *cipher;
+     SECStatus rv;
+     PRUint32 policy;
+@@ -1403,11 +1402,9 @@ NSS_SetDomesticPolicy(void)
+     }
+ 
+     for (cipher = SSL_ImplementedCiphers; *cipher != 0; ++cipher) {
+-        status = SSL_SetPolicy(*cipher, SSL_ALLOWED);
+-        if (status != SECSuccess)
+-            break;
++        (void) SSL_SetPolicy(*cipher, SSL_ALLOWED);
+     }
+-    return status;
++    return SECSuccess;
+ }
+ 
+ SECStatus

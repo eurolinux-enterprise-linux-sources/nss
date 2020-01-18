@@ -1,0 +1,47 @@
+diff -up nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests nss/gtests/ssl_gtest/ssl_auth_unittest.cc
+--- nss/gtests/ssl_gtest/ssl_auth_unittest.cc.reorder-cipher-suites-gtests	2018-03-05 16:58:32.000000000 +0100
++++ nss/gtests/ssl_gtest/ssl_auth_unittest.cc	2018-03-09 17:29:32.985313219 +0100
+@@ -231,7 +231,9 @@ static SSLNamedGroup NamedGroupForEcdsa3
+   // NSS tries to match the group size to the symmetric cipher. In TLS 1.1 and
+   // 1.0, TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA is the highest priority suite, so
+   // we use P-384. With TLS 1.2 on we pick AES-128 GCM so use x25519.
+-  if (version <= SSL_LIBRARY_VERSION_TLS_1_1) {
++  // FIXME: In RHEL, we assign TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
++  // a higher priority than AES-128 GCM.
++  if (version <= SSL_LIBRARY_VERSION_TLS_1_2) {
+     return ssl_grp_ec_secp384r1;
+   }
+   return ssl_grp_ec_curve25519;
+@@ -870,20 +872,24 @@ INSTANTIATE_TEST_CASE_P(
+                        ::testing::Values(TlsAgent::kServerEcdsa256),
+                        ::testing::Values(ssl_auth_ecdsa),
+                        ::testing::Values(ssl_sig_ecdsa_secp256r1_sha256)));
++  // FIXME: In RHEL, we assign TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384
++  // a higher priority than AES-128 GCM, and that causes the following
++  // 3 TLS 1.2 tests to fail.
+ INSTANTIATE_TEST_CASE_P(
+     SignatureSchemeEcdsaP384, TlsSignatureSchemeConfiguration,
+     ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
+-                       TlsConnectTestBase::kTlsV12Plus,
++                       TlsConnectTestBase::kTlsV13,
+                        ::testing::Values(TlsAgent::kServerEcdsa384),
+                        ::testing::Values(ssl_auth_ecdsa),
+                        ::testing::Values(ssl_sig_ecdsa_secp384r1_sha384)));
+ INSTANTIATE_TEST_CASE_P(
+     SignatureSchemeEcdsaP521, TlsSignatureSchemeConfiguration,
+     ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
+-                       TlsConnectTestBase::kTlsV12Plus,
++                       TlsConnectTestBase::kTlsV13,
+                        ::testing::Values(TlsAgent::kServerEcdsa521),
+                        ::testing::Values(ssl_auth_ecdsa),
+                        ::testing::Values(ssl_sig_ecdsa_secp521r1_sha512)));
++#if 0
+ INSTANTIATE_TEST_CASE_P(
+     SignatureSchemeEcdsaSha1, TlsSignatureSchemeConfiguration,
+     ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
+@@ -892,4 +898,5 @@ INSTANTIATE_TEST_CASE_P(
+                                          TlsAgent::kServerEcdsa384),
+                        ::testing::Values(ssl_auth_ecdsa),
+                        ::testing::Values(ssl_sig_ecdsa_sha1)));
++#endif
+ }  // namespace nss_test
