@@ -1,0 +1,14 @@
+diff --git a/lib/cryptohi/seckey.c b/lib/cryptohi/seckey.c
+--- a/lib/cryptohi/seckey.c
++++ b/lib/cryptohi/seckey.c
+@@ -639,6 +639,11 @@
+                     return pubk;
+                 break;
+             case SEC_OID_ANSIX962_EC_PUBLIC_KEY:
++                /* A basic sanity check on inputs. */
++                if (spki->algorithm.parameters.len == 0 || newOs.len == 0) {
++                    PORT_SetError(SEC_ERROR_INPUT_LEN);
++                    break;
++                }
+                 pubk->keyType = ecKey;
+                 pubk->u.ec.size = 0;
