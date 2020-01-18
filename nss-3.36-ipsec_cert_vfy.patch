@@ -1,0 +1,820 @@
+# HG changeset patch
+# User Robert Relyea <rrelyea@redhat.com>
+# Date 1541713180 28800
+#      Thu Nov 08 13:39:40 2018 -0800
+# Node ID 0c8334a3b23372556ebedbdfe513417eb9ee55a0
+# Parent  070bebf39672054410437b0cf931e00a8920a1ff
+try: -b do -p all -u all -t all
+
+diff --git a/cmd/certutil/certutil.c b/cmd/certutil/certutil.c
+--- a/cmd/certutil/certutil.c
++++ b/cmd/certutil/certutil.c
+@@ -736,16 +736,19 @@ ValidateCert(CERTCertDBHandle *handle, c
+             usage = certificateUsageVerifyCA;
+             break;
+         case 'C':
+             usage = certificateUsageSSLClient;
+             break;
+         case 'V':
+             usage = certificateUsageSSLServer;
+             break;
++        case 'I':
++            usage = certificateUsageIPsec;
++            break;
+         case 'S':
+             usage = certificateUsageEmailSigner;
+             break;
+         case 'R':
+             usage = certificateUsageEmailRecipient;
+             break;
+         case 'J':
+             usage = certificateUsageObjectSigner;
+@@ -1701,16 +1704,17 @@ luV(enum usage_level ul, const char *com
+         "   -n cert-name");
+     FPS "%-20s validity time (\"YYMMDDHHMMSS[+HHMM|-HHMM|Z]\")\n",
+         "   -b time");
+     FPS "%-20s Check certificate signature \n",
+         "   -e ");
+     FPS "%-20s Specify certificate usage:\n", "   -u certusage");
+     FPS "%-25s C \t SSL Client\n", "");
+     FPS "%-25s V \t SSL Server\n", "");
++    FPS "%-25s I \t IPsec\n", "");
+     FPS "%-25s L \t SSL CA\n", "");
+     FPS "%-25s A \t Any CA\n", "");
+     FPS "%-25s Y \t Verify CA\n", "");
+     FPS "%-25s S \t Email signer\n", "");
+     FPS "%-25s R \t Email Recipient\n", "");
+     FPS "%-25s O \t OCSP status responder\n", "");
+     FPS "%-25s J \t Object signer\n", "");
+     FPS "%-20s Cert database directory (default is ~/.netscape)\n",
+diff --git a/cmd/dbck/dbrecover.c b/cmd/dbck/dbrecover.c
+--- a/cmd/dbck/dbrecover.c
++++ b/cmd/dbck/dbrecover.c
+@@ -283,17 +283,18 @@ addCertToDB(certDBEntryCert *certEntry, 
+     userCert = (SEC_GET_TRUST_FLAGS(trust, trustSSL) & CERTDB_USER) ||
+                (SEC_GET_TRUST_FLAGS(trust, trustEmail) & CERTDB_USER) ||
+                (SEC_GET_TRUST_FLAGS(trust, trustObjectSigning) & CERTDB_USER);
+     if (userCert)
+         goto createcert;
+ 
+     /*  If user chooses so, ignore expired certificates.  */
+     allowOverride = (PRBool)((oldCert->keyUsage == certUsageSSLServer) ||
+-                             (oldCert->keyUsage == certUsageSSLServerWithStepUp));
++                             (oldCert->keyUsage == certUsageSSLServerWithStepUp) ||
++                             (oldCert->keyUsage == certUsageIPsec));
+     validity = CERT_CheckCertValidTimes(oldCert, PR_Now(), allowOverride);
+     /*  If cert expired and user wants to delete it, ignore it. */
+     if ((validity != secCertTimeValid) &&
+         userSaysDeleteCert(&oldCert, 1, dbInvalidCert, info, 0)) {
+         info->dbErrors[dbInvalidCert]++;
+         if (info->verbose) {
+             PR_fprintf(info->out, "Deleting expired certificate:\n");
+             dumpCertificate(oldCert, -1, info->out);
+diff --git a/cmd/ocspclnt/ocspclnt.c b/cmd/ocspclnt/ocspclnt.c
+--- a/cmd/ocspclnt/ocspclnt.c
++++ b/cmd/ocspclnt/ocspclnt.c
+@@ -129,16 +129,18 @@ long_usage(char *progname)
+     PR_fprintf(pr_stderr,
+                "  %-13s Type of certificate usage for verification:\n",
+                "-u usage");
+     PR_fprintf(pr_stderr,
+                "%-17s c   SSL Client\n", "");
+     PR_fprintf(pr_stderr,
+                "%-17s s   SSL Server\n", "");
+     PR_fprintf(pr_stderr,
++               "%-17s I   IPsec\n", "");
++    PR_fprintf(pr_stderr,
+                "%-17s e   Email Recipient\n", "");
+     PR_fprintf(pr_stderr,
+                "%-17s E   Email Signer\n", "");
+     PR_fprintf(pr_stderr,
+                "%-17s S   Object Signer\n", "");
+     PR_fprintf(pr_stderr,
+                "%-17s C   CA\n", "");
+     PR_fprintf(pr_stderr,
+@@ -903,16 +905,19 @@ cert_usage_from_char(const char *cert_us
+ 
+     switch (*cert_usage_str) {
+         case 'c':
+             *cert_usage = certUsageSSLClient;
+             break;
+         case 's':
+             *cert_usage = certUsageSSLServer;
+             break;
++        case 'I':
++            *cert_usage = certUsageIPsec;
++            break;
+         case 'e':
+             *cert_usage = certUsageEmailRecipient;
+             break;
+         case 'E':
+             *cert_usage = certUsageEmailSigner;
+             break;
+         case 'S':
+             *cert_usage = certUsageObjectSigner;
+diff --git a/cmd/p7verify/p7verify.c b/cmd/p7verify/p7verify.c
+--- a/cmd/p7verify/p7verify.c
++++ b/cmd/p7verify/p7verify.c
+@@ -112,16 +112,17 @@ Usage(char *progName)
+     fprintf(stderr, "%-25s  4 - certUsageEmailSigner\n", " ");
+     fprintf(stderr, "%-25s  5 - certUsageEmailRecipient\n", " ");
+     fprintf(stderr, "%-25s  6 - certUsageObjectSigner\n", " ");
+     fprintf(stderr, "%-25s  7 - certUsageUserCertImport\n", " ");
+     fprintf(stderr, "%-25s  8 - certUsageVerifyCA\n", " ");
+     fprintf(stderr, "%-25s  9 - certUsageProtectedObjectSigner\n", " ");
+     fprintf(stderr, "%-25s 10 - certUsageStatusResponder\n", " ");
+     fprintf(stderr, "%-25s 11 - certUsageAnyCA\n", " ");
++    fprintf(stderr, "%-25s 12 - certUsageIPsec\n", " ");
+ 
+     exit(-1);
+ }
+ 
+ static int
+ HashDecodeAndVerify(FILE *out, FILE *content, PRFileDesc *signature,
+                     SECCertUsage usage, char *progName)
+ {
+diff --git a/cmd/smimetools/cmsutil.c b/cmd/smimetools/cmsutil.c
+--- a/cmd/smimetools/cmsutil.c
++++ b/cmd/smimetools/cmsutil.c
+@@ -110,16 +110,17 @@ Usage(void)
+     fprintf(stderr, "%-25s  4 - certUsageEmailSigner\n", " ");
+     fprintf(stderr, "%-25s  5 - certUsageEmailRecipient\n", " ");
+     fprintf(stderr, "%-25s  6 - certUsageObjectSigner\n", " ");
+     fprintf(stderr, "%-25s  7 - certUsageUserCertImport\n", " ");
+     fprintf(stderr, "%-25s  8 - certUsageVerifyCA\n", " ");
+     fprintf(stderr, "%-25s  9 - certUsageProtectedObjectSigner\n", " ");
+     fprintf(stderr, "%-25s 10 - certUsageStatusResponder\n", " ");
+     fprintf(stderr, "%-25s 11 - certUsageAnyCA\n", " ");
++    fprintf(stderr, "%-25s 12 - certUsageIPsec\n", " ");
+ 
+     exit(-1);
+ }
+ 
+ struct optionsStr {
+     char *pwfile;
+     char *password;
+     SECCertUsage certUsage;
+diff --git a/cmd/vfychain/vfychain.c b/cmd/vfychain/vfychain.c
+--- a/cmd/vfychain/vfychain.c
++++ b/cmd/vfychain/vfychain.c
+@@ -59,17 +59,18 @@ Usage(const char *progName)
+             "\t-o oid\t\t Set policy OID for cert validation(Format OID.1.2.3)\n"
+             "\t-p \t\t Use PKIX Library to validate certificate by calling:\n"
+             "\t\t\t   * CERT_VerifyCertificate if specified once,\n"
+             "\t\t\t   * CERT_PKIXVerifyCert if specified twice and more.\n"
+             "\t-r\t\t Following certfile is raw binary DER (default)\n"
+             "\t-t\t\t Following cert is explicitly trusted (overrides db trust).\n"
+             "\t-u usage \t 0=SSL client, 1=SSL server, 2=SSL StepUp, 3=SSL CA,\n"
+             "\t\t\t 4=Email signer, 5=Email recipient, 6=Object signer,\n"
+-            "\t\t\t 9=ProtectedObjectSigner, 10=OCSP responder, 11=Any CA\n"
++            "\t\t\t 9=ProtectedObjectSigner, 10=OCSP responder, 11=Any CA,\n"
++            "\t\t\t 12=IPsec\n"
+             "\t-T\t\t Trust both explicit trust anchors (-t) and the database.\n"
+             "\t\t\t (Default is to only trust certificates marked -t, if there are any,\n"
+             "\t\t\t or to trust the database if there are certificates marked -t.)\n"
+             "\t-v\t\t Verbose mode. Prints root cert subject(double the\n"
+             "\t\t\t argument for whole root cert info)\n"
+             "\t-w password\t Database password.\n"
+             "\t-W pwfile\t Password file.\n\n"
+             "\tRevocation options for PKIX API(invoked with -pp options) is a\n"
+diff --git a/lib/certdb/certdb.c b/lib/certdb/certdb.c
+--- a/lib/certdb/certdb.c
++++ b/lib/certdb/certdb.c
+@@ -441,16 +441,84 @@ cert_GetCertType(CERTCertificate *cert)
+     nsCertType = cert_ComputeCertType(cert);
+ 
+     /* Assert that it is safe to cast &cert->nsCertType to "PRInt32 *" */
+     PORT_Assert(sizeof(cert->nsCertType) == sizeof(PRInt32));
+     PR_ATOMIC_SET((PRInt32 *)&cert->nsCertType, nsCertType);
+     return SECSuccess;
+ }
+ 
++PRBool
++cert_EKUAllowsIPsecIKE(CERTCertificate *cert, PRBool *isCritical)
++{
++    SECStatus rv;
++    SECItem encodedExtKeyUsage;
++    CERTOidSequence *extKeyUsage = NULL;
++    PRBool result = PR_FALSE;
++
++    rv = CERT_GetExtenCriticality(cert->extensions,
++                                  SEC_OID_X509_EXT_KEY_USAGE,
++                                  isCritical);
++    if (rv != SECSuccess) {
++        *isCritical = PR_FALSE;
++    }
++
++    encodedExtKeyUsage.data = NULL;
++    rv = CERT_FindCertExtension(cert, SEC_OID_X509_EXT_KEY_USAGE,
++                                &encodedExtKeyUsage);
++    if (rv != SECSuccess) {
++        /* EKU not present, allowed. */
++        result = PR_TRUE;
++        goto done;
++    }
++
++    extKeyUsage = CERT_DecodeOidSequence(&encodedExtKeyUsage);
++    if (!extKeyUsage) {
++        /* failure */
++        goto done;
++    }
++
++    if (findOIDinOIDSeqByTagNum(extKeyUsage,
++                                SEC_OID_X509_ANY_EXT_KEY_USAGE) ==
++        SECSuccess) {
++        result = PR_TRUE;
++        goto done;
++    }
++
++    if (findOIDinOIDSeqByTagNum(extKeyUsage,
++                                SEC_OID_EXT_KEY_USAGE_IPSEC_IKE) ==
++        SECSuccess) {
++        result = PR_TRUE;
++        goto done;
++    }
++
++    if (findOIDinOIDSeqByTagNum(extKeyUsage,
++                                SEC_OID_IPSEC_IKE_END) ==
++        SECSuccess) {
++        result = PR_TRUE;
++        goto done;
++    }
++
++    if (findOIDinOIDSeqByTagNum(extKeyUsage,
++                                SEC_OID_IPSEC_IKE_INTERMEDIATE) ==
++        SECSuccess) {
++        result = PR_TRUE;
++        goto done;
++    }
++
++done:
++    if (encodedExtKeyUsage.data != NULL) {
++        PORT_Free(encodedExtKeyUsage.data);
++    }
++    if (extKeyUsage != NULL) {
++        CERT_DestroyOidSequence(extKeyUsage);
++    }
++    return result;
++}
++
+ PRUint32
+ cert_ComputeCertType(CERTCertificate *cert)
+ {
+     SECStatus rv;
+     SECItem tmpitem;
+     SECItem encodedExtKeyUsage;
+     CERTOidSequence *extKeyUsage = NULL;
+     PRBool basicConstraintPresent = PR_FALSE;
+@@ -1078,16 +1146,20 @@ CERT_KeyUsageAndTypeForCertUsage(SECCert
+             case certUsageSSLClient:
+                 requiredKeyUsage = KU_KEY_CERT_SIGN;
+                 requiredCertType = NS_CERT_TYPE_SSL_CA;
+                 break;
+             case certUsageSSLServer:
+                 requiredKeyUsage = KU_KEY_CERT_SIGN;
+                 requiredCertType = NS_CERT_TYPE_SSL_CA;
+                 break;
++            case certUsageIPsec:
++                requiredKeyUsage = KU_KEY_CERT_SIGN;
++                requiredCertType = NS_CERT_TYPE_SSL_CA;
++                break;
+             case certUsageSSLCA:
+                 requiredKeyUsage = KU_KEY_CERT_SIGN;
+                 requiredCertType = NS_CERT_TYPE_SSL_CA;
+                 break;
+             case certUsageEmailSigner:
+                 requiredKeyUsage = KU_KEY_CERT_SIGN;
+                 requiredCertType = NS_CERT_TYPE_EMAIL_CA;
+                 break;
+@@ -1120,16 +1192,21 @@ CERT_KeyUsageAndTypeForCertUsage(SECCert
+                  */
+                 requiredKeyUsage = KU_DIGITAL_SIGNATURE;
+                 requiredCertType = NS_CERT_TYPE_SSL_CLIENT;
+                 break;
+             case certUsageSSLServer:
+                 requiredKeyUsage = KU_KEY_AGREEMENT_OR_ENCIPHERMENT;
+                 requiredCertType = NS_CERT_TYPE_SSL_SERVER;
+                 break;
++            case certUsageIPsec:
++                /* RFC 4945 Section 5.1.3.2 */
++                requiredKeyUsage = KU_DIGITAL_SIGNATURE_OR_NON_REPUDIATION;
++                requiredCertType = 0;
++                break;
+             case certUsageSSLServerWithStepUp:
+                 requiredKeyUsage =
+                     KU_KEY_AGREEMENT_OR_ENCIPHERMENT | KU_NS_GOVT_APPROVED;
+                 requiredCertType = NS_CERT_TYPE_SSL_SERVER;
+                 break;
+             case certUsageSSLCA:
+                 requiredKeyUsage = KU_KEY_CERT_SIGN;
+                 requiredCertType = NS_CERT_TYPE_SSL_CA;
+diff --git a/lib/certdb/certi.h b/lib/certdb/certi.h
+--- a/lib/certdb/certi.h
++++ b/lib/certdb/certi.h
+@@ -289,16 +289,19 @@ SECStatus cert_DestroyLocks(void);
+ extern SECStatus cert_GetCertType(CERTCertificate* cert);
+ 
+ /*
+  * compute and return the value of nsCertType for cert, but do not
+  * update the CERTCertificate.
+  */
+ extern PRUint32 cert_ComputeCertType(CERTCertificate* cert);
+ 
++extern PRBool cert_EKUAllowsIPsecIKE(CERTCertificate* cert,
++                                     PRBool* isCritical);
++
+ void cert_AddToVerifyLog(CERTVerifyLog* log, CERTCertificate* cert,
+                          long errorCode, unsigned int depth, void* arg);
+ 
+ /* Insert a DER CRL into the CRL cache, and take ownership of it.
+  *
+  * cert_CacheCRLByGeneralName takes ownership of the memory in crl argument
+  * completely.  crl must be freeable by SECITEM_FreeItem. It will be freed
+  * immediately if it is rejected from the CRL cache, or later during cache
+diff --git a/lib/certdb/certt.h b/lib/certdb/certt.h
+--- a/lib/certdb/certt.h
++++ b/lib/certdb/certt.h
+@@ -442,17 +442,18 @@ typedef enum SECCertUsageEnum {
+     certUsageSSLCA = 3,
+     certUsageEmailSigner = 4,
+     certUsageEmailRecipient = 5,
+     certUsageObjectSigner = 6,
+     certUsageUserCertImport = 7,
+     certUsageVerifyCA = 8,
+     certUsageProtectedObjectSigner = 9,
+     certUsageStatusResponder = 10,
+-    certUsageAnyCA = 11
++    certUsageAnyCA = 11,
++    certUsageIPsec = 12
+ } SECCertUsage;
+ 
+ typedef PRInt64 SECCertificateUsage;
+ 
+ #define certificateUsageCheckAllUsages (0x0000)
+ #define certificateUsageSSLClient (0x0001)
+ #define certificateUsageSSLServer (0x0002)
+ #define certificateUsageSSLServerWithStepUp (0x0004)
+@@ -460,18 +461,19 @@ typedef PRInt64 SECCertificateUsage;
+ #define certificateUsageEmailSigner (0x0010)
+ #define certificateUsageEmailRecipient (0x0020)
+ #define certificateUsageObjectSigner (0x0040)
+ #define certificateUsageUserCertImport (0x0080)
+ #define certificateUsageVerifyCA (0x0100)
+ #define certificateUsageProtectedObjectSigner (0x0200)
+ #define certificateUsageStatusResponder (0x0400)
+ #define certificateUsageAnyCA (0x0800)
++#define certificateUsageIPsec (0x1000)
+ 
+-#define certificateUsageHighest certificateUsageAnyCA
++#define certificateUsageHighest certificateUsageIPsec
+ 
+ /*
+  * Does the cert belong to the user, a peer, or a CA.
+  */
+ typedef enum CERTCertOwnerEnum {
+     certOwnerUser = 0,
+     certOwnerPeer = 1,
+     certOwnerCA = 2
+diff --git a/lib/certhigh/certvfy.c b/lib/certhigh/certvfy.c
+--- a/lib/certhigh/certvfy.c
++++ b/lib/certhigh/certvfy.c
+@@ -284,16 +284,20 @@ CERT_TrustFlagsForCACertUsage(SECCertUsa
+             requiredFlags = CERTDB_TRUSTED_CLIENT_CA;
+             trustType = trustSSL;
+             break;
+         case certUsageSSLServer:
+         case certUsageSSLCA:
+             requiredFlags = CERTDB_TRUSTED_CA;
+             trustType = trustSSL;
+             break;
++        case certUsageIPsec:
++            requiredFlags = CERTDB_TRUSTED_CA;
++            trustType = trustSSL;
++            break;
+         case certUsageSSLServerWithStepUp:
+             requiredFlags = CERTDB_TRUSTED_CA | CERTDB_GOVT_APPROVED_CA;
+             trustType = trustSSL;
+             break;
+         case certUsageEmailSigner:
+         case certUsageEmailRecipient:
+             requiredFlags = CERTDB_TRUSTED_CA;
+             trustType = trustEmail;
+@@ -574,16 +578,17 @@ cert_VerifyCertChainOld(CERTCertDBHandle
+         EXIT_IF_NOT_LOGGING(log);
+         requiredCAKeyUsage = 0;
+         caCertType = 0;
+     }
+ 
+     switch (certUsage) {
+         case certUsageSSLClient:
+         case certUsageSSLServer:
++        case certUsageIPsec:
+         case certUsageSSLCA:
+         case certUsageSSLServerWithStepUp:
+         case certUsageEmailSigner:
+         case certUsageEmailRecipient:
+         case certUsageObjectSigner:
+         case certUsageVerifyCA:
+         case certUsageAnyCA:
+         case certUsageStatusResponder:
+@@ -640,17 +645,18 @@ cert_VerifyCertChainOld(CERTCertDBHandle
+          * certifcates (except leaf (EE) certs, root CAs, and self-issued
+          * intermediate CAs) to be verified against the name constraints
+          * extension of the issuer certificate.
+          */
+         if (subjectCertIsSelfIssued == PR_FALSE) {
+             CERTGeneralName *subjectNameList;
+             int subjectNameListLen;
+             int i;
+-            PRBool getSubjectCN = (!count && certUsage == certUsageSSLServer);
++            PRBool getSubjectCN = (!count &&
++                                   (certUsage == certUsageSSLServer || certUsage == certUsageIPsec));
+             subjectNameList =
+                 CERT_GetConstrainedCertificateNames(subjectCert, arena,
+                                                     getSubjectCN);
+             if (!subjectNameList)
+                 goto loser;
+             subjectNameListLen = CERT_GetNamesLength(subjectNameList);
+             if (!subjectNameListLen)
+                 goto loser;
+@@ -981,16 +987,17 @@ CERT_VerifyCACertForUsage(CERTCertDBHand
+         EXIT_IF_NOT_LOGGING(log);
+         requiredCAKeyUsage = 0;
+         caCertType = 0;
+     }
+ 
+     switch (certUsage) {
+         case certUsageSSLClient:
+         case certUsageSSLServer:
++        case certUsageIPsec:
+         case certUsageSSLCA:
+         case certUsageSSLServerWithStepUp:
+         case certUsageEmailSigner:
+         case certUsageEmailRecipient:
+         case certUsageObjectSigner:
+         case certUsageVerifyCA:
+         case certUsageStatusResponder:
+             if (CERT_TrustFlagsForCACertUsage(certUsage, &requiredFlags,
+@@ -1166,16 +1173,17 @@ cert_CheckLeafTrust(CERTCertificate *cer
+     *failedFlags = 0;
+     *trusted = PR_FALSE;
+ 
+     /* check trust flags to see if this cert is directly trusted */
+     if (CERT_GetCertTrust(cert, &trust) == SECSuccess) {
+         switch (certUsage) {
+             case certUsageSSLClient:
+             case certUsageSSLServer:
++            case certUsageIPsec:
+                 flags = trust.sslFlags;
+ 
+                 /* is the cert directly trusted or not trusted ? */
+                 if (flags & CERTDB_TERMINAL_RECORD) { /* the trust record is
+                             * authoritative */
+                     if (flags & CERTDB_TRUSTED) {     /* trust this cert */
+                         *trusted = PR_TRUE;
+                         return SECSuccess;
+@@ -1342,45 +1350,48 @@ CERT_VerifyCertificate(CERTCertDBHandle 
+         /* we don't have a place to return status for all usages,
+            so we can skip checks for usages that aren't required */
+         checkAllUsages = PR_FALSE;
+     }
+     valid = SECSuccess; /* start off assuming cert is valid */
+ 
+     /* make sure that the cert is valid at time t */
+     allowOverride = (PRBool)((requiredUsages & certificateUsageSSLServer) ||
+-                             (requiredUsages & certificateUsageSSLServerWithStepUp));
++                             (requiredUsages & certificateUsageSSLServerWithStepUp) ||
++                             (requiredUsages & certificateUsageIPsec));
+     validity = CERT_CheckCertValidTimes(cert, t, allowOverride);
+     if (validity != secCertTimeValid) {
+         valid = SECFailure;
+         LOG_ERROR_OR_EXIT(log, cert, 0, validity);
+     }
+ 
+     /* check key usage and netscape cert type */
+     cert_GetCertType(cert);
+     certType = cert->nsCertType;
+ 
+     for (i = 1; i <= certificateUsageHighest &&
+                 (SECSuccess == valid || returnedUsages || log);) {
++        PRBool typeAndEKUAllowed = PR_TRUE;
+         PRBool requiredUsage = (i & requiredUsages) ? PR_TRUE : PR_FALSE;
+         if (PR_FALSE == requiredUsage && PR_FALSE == checkAllUsages) {
+             NEXT_USAGE();
+         }
+         if (returnedUsages) {
+             *returnedUsages |= i; /* start off assuming this usage is valid */
+         }
+         switch (certUsage) {
+             case certUsageSSLClient:
+             case certUsageSSLServer:
+             case certUsageSSLServerWithStepUp:
+             case certUsageSSLCA:
+             case certUsageEmailSigner:
+             case certUsageEmailRecipient:
+             case certUsageObjectSigner:
+             case certUsageStatusResponder:
++            case certUsageIPsec:
+                 rv = CERT_KeyUsageAndTypeForCertUsage(certUsage, PR_FALSE,
+                                                       &requiredKeyUsage,
+                                                       &requiredCertType);
+                 if (rv != SECSuccess) {
+                     PORT_Assert(0);
+                     /* EXIT_IF_NOT_LOGGING(log); XXX ??? */
+                     requiredKeyUsage = 0;
+                     requiredCertType = 0;
+@@ -1403,17 +1414,29 @@ CERT_VerifyCertificate(CERTCertDBHandle 
+         }
+         if (CERT_CheckKeyUsage(cert, requiredKeyUsage) != SECSuccess) {
+             if (PR_TRUE == requiredUsage) {
+                 PORT_SetError(SEC_ERROR_INADEQUATE_KEY_USAGE);
+             }
+             LOG_ERROR(log, cert, 0, requiredKeyUsage);
+             INVALID_USAGE();
+         }
+-        if (!(certType & requiredCertType)) {
++        if (certUsage != certUsageIPsec) {
++            if (!(certType & requiredCertType)) {
++                typeAndEKUAllowed = PR_FALSE;
++            }
++        } else {
++            PRBool isCritical;
++            PRBool allowed = cert_EKUAllowsIPsecIKE(cert, &isCritical);
++            /* If the extension isn't critical, we allow any EKU value. */
++            if (isCritical && !allowed) {
++                typeAndEKUAllowed = PR_FALSE;
++            }
++        }
++        if (!typeAndEKUAllowed) {
+             if (PR_TRUE == requiredUsage) {
+                 PORT_SetError(SEC_ERROR_INADEQUATE_CERT_TYPE);
+             }
+             LOG_ERROR(log, cert, 0, requiredCertType);
+             INVALID_USAGE();
+         }
+ 
+         rv = cert_CheckLeafTrust(cert, certUsage, &flags, &trusted);
+@@ -1503,29 +1526,31 @@ cert_VerifyCertWithFlags(CERTCertDBHandl
+     if (rv != SECSuccess) {
+         PORT_SetError(SEC_ERROR_REVOKED_CERTIFICATE);
+         LOG_ERROR_OR_EXIT(log, cert, 0, 0);
+     }
+ #endif
+ 
+     /* make sure that the cert is valid at time t */
+     allowOverride = (PRBool)((certUsage == certUsageSSLServer) ||
+-                             (certUsage == certUsageSSLServerWithStepUp));
++                             (certUsage == certUsageSSLServerWithStepUp) ||
++                             (certUsage == certUsageIPsec));
+     validity = CERT_CheckCertValidTimes(cert, t, allowOverride);
+     if (validity != secCertTimeValid) {
+         LOG_ERROR_OR_EXIT(log, cert, 0, validity);
+     }
+ 
+     /* check key usage and netscape cert type */
+     cert_GetCertType(cert);
+     certType = cert->nsCertType;
+     switch (certUsage) {
+         case certUsageSSLClient:
+         case certUsageSSLServer:
+         case certUsageSSLServerWithStepUp:
++        case certUsageIPsec:
+         case certUsageSSLCA:
+         case certUsageEmailSigner:
+         case certUsageEmailRecipient:
+         case certUsageObjectSigner:
+         case certUsageStatusResponder:
+             rv = CERT_KeyUsageAndTypeForCertUsage(certUsage, PR_FALSE,
+                                                   &requiredKeyUsage,
+                                                   &requiredCertType);
+@@ -1628,16 +1653,17 @@ CERT_VerifyCertNow(CERTCertDBHandle *han
+ }
+ 
+ /* [ FROM pcertdb.c ] */
+ /*
+  * Supported usage values and types:
+  *  certUsageSSLClient
+  *  certUsageSSLServer
+  *  certUsageSSLServerWithStepUp
++ *  certUsageIPsec
+  *  certUsageEmailSigner
+  *  certUsageEmailRecipient
+  *  certUsageObjectSigner
+  */
+ 
+ CERTCertificate *
+ CERT_FindMatchingCert(CERTCertDBHandle *handle, SECItem *derName,
+                       CERTCertOwner owner, SECCertUsage usage,
+diff --git a/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c b/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
+--- a/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
++++ b/lib/libpkix/pkix_pl_nss/pki/pkix_pl_cert.c
+@@ -2909,17 +2909,18 @@ PKIX_PL_Cert_CheckValidity(
+                         PKIX_DATEGETPRTIMEFAILED);
+         } else {
+                 timeToCheck = PR_Now();
+         }
+ 
+         requiredUsages = ((PKIX_PL_NssContext*)plContext)->certificateUsage;
+         allowOverride =
+             (PRBool)((requiredUsages & certificateUsageSSLServer) ||
+-                     (requiredUsages & certificateUsageSSLServerWithStepUp));
++                     (requiredUsages & certificateUsageSSLServerWithStepUp) ||
++                     (requiredUsages & certificateUsageIPsec));
+         val = CERT_CheckCertValidTimes(cert->nssCert, timeToCheck, allowOverride);
+         if (val != secCertTimeValid){
+                 PKIX_ERROR(PKIX_CERTCHECKCERTVALIDTIMESFAILED);
+         }
+ 
+ cleanup:
+         PKIX_RETURN(CERT);
+ }
+@@ -2996,18 +2997,27 @@ PKIX_PL_Cert_VerifyCertAndKeyType(
+         /* use this key usage and cert type for certUsageAnyCA and
+          * certUsageVerifyCA. */
+ 	requiredKeyUsage = KU_KEY_CERT_SIGN;
+ 	requiredCertType = NS_CERT_TYPE_CA;
+     }
+     if (CERT_CheckKeyUsage(cert->nssCert, requiredKeyUsage) != SECSuccess) {
+         PKIX_ERROR(PKIX_CERTCHECKKEYUSAGEFAILED);
+     }
+-    if (!(certType & requiredCertType)) {
+-        PKIX_ERROR(PKIX_CERTCHECKCERTTYPEFAILED);
++    if (certUsage != certUsageIPsec) {
++        if (!(certType & requiredCertType)) {
++            PKIX_ERROR(PKIX_CERTCHECKCERTTYPEFAILED);
++        }
++    } else {
++        PRBool isCritical;
++        PRBool allowed = cert_EKUAllowsIPsecIKE(cert->nssCert, &isCritical);
++        /* If the extension isn't critical, we allow any EKU value. */
++        if (isCritical && !allowed) {
++            PKIX_ERROR(PKIX_CERTCHECKCERTTYPEFAILED);
++        }
+     }
+ cleanup:
+     PKIX_DECREF(basicConstraints);
+     PKIX_RETURN(CERT);
+ }
+ 
+ /*
+  * FUNCTION: PKIX_PL_Cert_VerifyKeyUsage (see comments in pkix_pl_pki.h)
+diff --git a/tests/chains/chains.sh b/tests/chains/chains.sh
+--- a/tests/chains/chains.sh
++++ b/tests/chains/chains.sh
+@@ -347,16 +347,22 @@ create_cert_req()
+     OPTIONS=
+ 
+     if [ "${TYPE}" != "EE" ]; then
+         CA_FLAG="-2"
+         EXT_DATA="y
+ -1
+ y
+ "
++    else
++        CA_FLAG="-2"
++        EXT_DATA="n
++-1
++y
++"
+     fi
+ 
+     process_crldp
+ 
+     echo "${EXT_DATA}" > ${CU_DATA}
+ 
+     TESTNAME="Creating ${TYPE} certifiate request ${REQ}"
+     echo "${SCRIPTNAME}: ${TESTNAME}"
+@@ -1253,16 +1259,22 @@ process_scenario()
+ 
+     while read AIA_FILE
+     do
+ 	rm ${AIA_FILE} 2> /dev/null
+     done < ${AIA_FILES}
+     rm ${AIA_FILES}
+ }
+ 
++# process ipsec.cfg separately
++chains_ipsec()
++{
++    process_scenario "ipsec.cfg"
++}
++
+ # process ocspd.cfg separately
+ chains_ocspd()
+ {
+     process_scenario "ocspd.cfg"
+ }
+ 
+ # process ocsp.cfg separately
+ chains_method()
+@@ -1274,29 +1286,31 @@ chains_method()
+ # local shell function to process all testing scenarios
+ ########################################################################
+ chains_main()
+ {
+     while read LINE 
+     do
+         [ `echo ${LINE} | cut -b 1` != "#" ] || continue
+ 
++	[ ${LINE} != 'ipsec.cfg' ] || continue
+ 	[ ${LINE} != 'ocspd.cfg' ] || continue
+ 	[ ${LINE} != 'method.cfg' ] || continue
+ 
+ 	process_scenario ${LINE}
+     done < "${CHAINS_SCENARIOS}"
+ }
+ 
+ ################################ main ##################################
+ 
+ chains_init
+ VERIFY_CLASSIC_ENGINE_TOO=
+ chains_ocspd
+ VERIFY_CLASSIC_ENGINE_TOO=1
++chains_ipsec
+ chains_run_httpserv get
+ chains_method
+ chains_stop_httpserv
+ chains_run_httpserv post
+ chains_method
+ chains_stop_httpserv
+ VERIFY_CLASSIC_ENGINE_TOO=
+ chains_run_httpserv random
+diff --git a/tests/chains/scenarios/ipsec.cfg b/tests/chains/scenarios/ipsec.cfg
+new file mode 100644
+--- /dev/null
++++ b/tests/chains/scenarios/ipsec.cfg
+@@ -0,0 +1,61 @@
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at http://mozilla.org/MPL/2.0/.
++
++scenario IPsec
++
++entity Root
++  type Root
++
++entity CA1
++  type Intermediate
++  issuer Root 
++
++entity NoKU
++  type EE
++  issuer CA1
++
++entity DigSig
++  type EE
++  issuer CA1
++    ku digitalSignature
++
++entity NonRep
++  type EE
++  issuer CA1
++    ku nonRepudiation
++
++entity DigSigNonRepAndExtra
++  type EE
++  issuer CA1
++    ku digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement
++
++entity NoMatch
++  type EE
++  issuer CA1
++    ku keyEncipherment,dataEncipherment,keyAgreement
++
++db All
++
++import Root::C,,
++import CA1:Root:
++
++verify NoKU:CA1
++  usage 12
++  result pass
++
++verify DigSig:CA1
++  usage 12
++  result pass
++
++verify NonRep:CA1
++  usage 12
++  result pass
++
++verify DigSigNonRepAndExtra:CA1
++  usage 12
++  result pass
++
++verify NoMatch:CA1
++  usage 12
++  result fail
+diff --git a/tests/chains/scenarios/scenarios b/tests/chains/scenarios/scenarios
+--- a/tests/chains/scenarios/scenarios
++++ b/tests/chains/scenarios/scenarios
+@@ -17,8 +17,9 @@ bridgewithhalfaia.cfg
+ bridgewithpolicyextensionandmapping.cfg
+ realcerts.cfg
+ dsa.cfg
+ revoc.cfg
+ ocsp.cfg
+ crldp.cfg
+ trustanchors.cfg
+ nameconstraints.cfg
++ipsec.cfg

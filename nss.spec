@@ -1,6 +1,6 @@
 %global nspr_version 4.19.0
 %global nss_util_version 3.36.0
-%global nss_util_build -1
+%global nss_util_build -1.1
 # adjust to the version that gets submitted for FIPS validation
 %global nss_softokn_fips_version 3.36.0
 %global nss_softokn_version 3.36.0
@@ -27,7 +27,7 @@
 Summary:          Network Security Services
 Name:             nss
 Version:          3.36.0
-Release:          5%{?dist}
+Release:          7.1%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
@@ -93,6 +93,9 @@ Source33:         TestOldCA.p12
 Patch2:           add-relro-linker-option.patch
 Patch3:           renegotiate-transitional.patch
 Patch16:          nss-539183.patch
+# Remove this patch on when we rebase to NSS 3.40, bug 1639404
+Patch17:          nss-3.36-ipsec_cert_vfy.patch
+Patch18:	  nss-tests-paypal-certs-v2.patch
 # TODO: Remove this patch when the ocsp test are fixed
 Patch40:          nss-3.14.0.0-disble-ocsp-test.patch
 # Fedora / RHEL-only patch, the templates directory was originally introduced to support mod_revocator
@@ -135,9 +138,10 @@ Patch139: nss-modutil-skip-changepw-fips.patch
 # Work around for yum
 # https://bugzilla.redhat.com/show_bug.cgi?id=1469526
 Patch141: nss-sysinit-getenv.patch
-# To revert the change in:
-# https://hg.mozilla.org/projects/nss/rev/896e3eb3a799
-Patch142: nss-lockcert-api-change.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1483128
+Patch142: nss-ssl2-server-random.patch
+# Upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=1444960
+Patch143: nss-tests-ssl-normal-normal.patch
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -220,6 +224,10 @@ low level services.
 %patch2 -p0 -b .relro
 %patch3 -p0 -b .transitional
 %patch16 -p0 -b .539183
+pushd nss
+%patch17 -p1 -b .ipsec_vfy
+%patch18 -p1 -b .update_paypal
+popd
 %patch40 -p0 -b .noocsptest
 %patch47 -p0 -b .templates
 %patch49 -p0 -b .skipthem
@@ -246,7 +254,8 @@ pushd nss
 %patch138 -p1 -b .devslot-reinsert
 %patch139 -p1 -b .modutil-skip-changepw-fips
 %patch141 -p1 -b .sysinit-getenv
-%patch142 -p1 -R -b .lockcert-api-change
+%patch142 -p1 -b .ssl2-server-random
+%patch143 -p1 -b .tests-ssl-normal-normal
 popd
 
 #########################################################
@@ -847,6 +856,17 @@ fi
 
 
 %changelog
+* Mon Nov 12 2018 Bob Relyea <rrelyea@redhat.com> - 3.36.0-7.1
+- Update the cert verify code to allow a new ipsec usage and follow RFC 4945
+
+* Wed Aug 29 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-7
+- Backport upstream fix for CVE-2018-12384
+- Remove nss-lockcert-api-change.patch, which turned out to be a
+  mistake (the symbol was not exported from libnss)
+
+* Thu Apr 19 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-6
+- Exercise SSL tests which only run under non-FIPS setting
+
 * Wed Apr 18 2018 Daiki Ueno <dueno@redhat.com> - 3.36.0-5
 - Restore CERT_LockCertTrust and CERT_UnlockCertTrust back in cert.h
 
